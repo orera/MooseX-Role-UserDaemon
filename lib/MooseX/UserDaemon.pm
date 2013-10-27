@@ -348,7 +348,7 @@ __END__
 
 =head1 NAME
 
-MooseX::DaemonControl
+MooseX::UserDaemon - A moose role ment to simplify writing of user level perl daemons.
 
 =head1 VERSION
 
@@ -360,13 +360,15 @@ In your module:
 
     package YourApp;
     use Moose;
-    with 'MooseX::DaemonControl';
+    with 'MooseX::UserDaemon';
 
+    # MooseX::UserDaemon requires the consuming class to implement main()
     sub main {
-      FOREVER_LOOP:
       while (1) {
         ...
       }
+      
+      return '0 but true'; # Return '0 but true' on success.
     }
 
 In your script:
@@ -375,6 +377,20 @@ In your script:
     my $app = YourApp->new;
 
     exit $app->run unless caller 0;
+
+On the commanline:
+
+	Start your app
+	$ myapp.pl start
+		Starting...
+
+	Check your status
+	$ myapp.pl status
+		Running with PID: ...
+
+	Stop your app
+	$ myapp.pl stop
+		Stopping PID: ...
 
 Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt:
 
@@ -388,7 +404,7 @@ In your module:
     # Enable use of commandline parameters
     with 'MooseX::Getopt';
 
-    with 'MooseX::DaemonControl';
+    with 'MooseX::UserDaemon';
 
     # '+configfile' Only required if using MooseX::SimpleConfig
     has '+configfile' => (
@@ -399,7 +415,6 @@ In your module:
     );
 
     sub main {
-      FOREVER_LOOP:
       while (1) {
         ...
       }
@@ -411,7 +426,34 @@ In your script:
     my $app = YourApp->new_with_options;
 
     exit $app->run unless caller 0;
-   
+
+On the commanline:
+
+	Start your app
+	$ myapp.pl start
+		Starting...
+
+	Check your status
+	$ myapp.pl status
+		Running with PID: ...
+
+	Stop your app
+	$ myapp.pl stop
+		Stopping PID: ...
+
+=head1 DESCRIPTION
+
+	This module aims to simplify the process of writing user level daemons, that runs from the users home directory.
+	This module should NOT under any circumstance be used to implement system level daemons.
+
+	It implements (by default):
+	Daemonization / forking, running your script in the background detached from the terminal.
+	Lockfile functionality to ensure only one running instance at any given time.
+	Pidfile functionality to allow you find the process id of any running instace.
+	Facilities to issue start/stop/restart/reload and status commands to your daemon while running.
+	
+	It plays nice with MooseX::Getopt and MooseX::SimpleConfig.
+
 =head1 SUBROUTINES/METHODS
 
 =head2 run
@@ -423,6 +465,9 @@ In your script:
 	stop
 	restart
 	reload
+
+  New commands can be added by the consuming class, it which case the attribute '_valid_commands' needs to be updated for 'run()' to allow the command to be executed.
+	'_valid_commands' is a RegexpRef and the default value is: qr/status|start|stop|reload|restart/
 
 =head2 status
 
