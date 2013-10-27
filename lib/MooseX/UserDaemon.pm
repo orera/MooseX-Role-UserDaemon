@@ -324,7 +324,9 @@ our $VERSION = '0.05';
     my $command;
     $command = $self->can('extra_argv')
       ? shift $self->extra_argv    # If MooseX::Getopt is in use.
-      : shift @ARGV || 'start';    # Else get it from @ARGV
+      : shift @ARGV;               # Else get it from @ARGV
+
+    $command = 'start' if !$command;
 
     # Validate that mode is valid
     if ( $command !~ $self->_valid_commands ) {
