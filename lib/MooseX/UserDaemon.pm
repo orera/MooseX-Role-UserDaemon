@@ -321,7 +321,10 @@ our $VERSION = '0.05';
     my ($self) = @_;
 
     # Get run mode. Default to start.
-    my $command = shift $self->extra_argv || 'start';
+    my $command;
+    $command = $self->can('extra_argv')
+      ? shift $self->extra_argv    # If MooseX::Getopt is in use.
+      : shift @ARGV || 'start';    # Else get it from @ARGV
 
     # Validate that mode is valid
     if ( $command !~ $self->_valid_commands ) {
