@@ -242,8 +242,8 @@ our $VERSION = '0.05';
     my ($self) = @_;
 
     $self->_is_running
-      ? print 'Running with PID: ' . $self->_read_pid . "\n"
-      : print "Not running\n";
+      ? say 'Running with PID: ' . $self->_read_pid
+      : say 'Not running.';
 
     return '0 but true';
   }
@@ -253,7 +253,7 @@ our $VERSION = '0.05';
 
     return $self->status if $self->_is_running;
 
-    print "Starting...\n";
+    say 'Starting...';
 
     # Do the fork, unless foreground mode is enabled
     return 3 if !$self->foreground && !$self->_daemonize;
@@ -266,18 +266,18 @@ our $VERSION = '0.05';
     my ($self) = @_;
 
     if ( !$self->_is_running ) {
-      print "Process not running, nothing to stop.\n";
+      say 'Process not running, nothing to stop.';
       return '0 but true';
     }
 
     if ( !$self->pidfile || !-e $self->pidfile ) {
-      print "No pidfile, not able to identify process\n";
+      say 'No pidfile, not able to identify process';
       return '0 but true';
     }
 
     my $PID = $self->_read_pid;
 
-    print "Stopping PID: $PID\n";
+    say "Stopping PID: $PID";
     kill 0, $PID and kill 'INT', $PID || do {
       warn 'Not able to issue kill signal.';
       return 8;
@@ -307,30 +307,31 @@ our $VERSION = '0.05';
 
       my $rc = kill 'HUP', $pid;
       $rc
-        ? print "PID: $pid, was signaled to reload\n"
-        : print "Failed to signal PID: $pid\n";
+        ? say 'PID: $pid, was signaled to reload'
+        : say "Failed to signal PID: $pid";
 
       return '0 but true';
     }
 
-    print "No process to signal\n";
+    say 'No process to signal';
     return '0 but true';
   }
 
   sub run {
     my ($self) = @_;
 
-    # Get run mode. Default to start.
+    # Get run mode.
     my $command;
     $command = $self->can('extra_argv')
       ? shift $self->extra_argv    # If MooseX::Getopt is in use.
       : shift @ARGV;               # Else get it from @ARGV
 
+    # Default to start.
     $command = 'start' if !$command;
 
     # Validate that mode is valid
     if ( $command !~ $self->_valid_commands ) {
-      print "Invalid command: $command\n";
+      say "Invalid command: $command";
       return 9;
     }
 
