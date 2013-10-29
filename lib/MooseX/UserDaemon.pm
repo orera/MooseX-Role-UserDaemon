@@ -27,7 +27,7 @@ our $VERSION = '0.05';
   has '_valid_commands' => (
     is      => 'ro',
     isa     => 'RegexpRef',
-    default => sub {qr/status|start|stop|reload|restart/},
+    default => sub {qr/status|start|stop|reload|restart/xms},
   );
 
   has 'foreground' => (
@@ -67,17 +67,17 @@ our $VERSION = '0.05';
 
   sub _build_basedir {
     my ($self) = @_;
-    return join '/.', $ENV{'HOME'}, lc $self->_name;
+    return join q{/.}, $ENV{'HOME'}, lc $self->_name;
   }
 
   sub _build_lockfile {
     my ($self) = @_;
-    return join '/', $self->basedir, 'lock';
+    return join q{/}, $self->basedir, 'lock';
   }
 
   sub _build_pidfile {
     my ($self) = @_;
-    return join '/', $self->basedir, 'pid';
+    return join q{/}, $self->basedir, 'pid';
   }
 
   # Write PID file if supplied
@@ -116,8 +116,8 @@ our $VERSION = '0.05';
       if -e $self->lockfile    # If it exists it:
       && (
       !-f $self->lockfile       # must be a regular file
-      or !-z $self->lockfile    # have a size of zero
-      or !-w $self->lockfile    # and be writeable
+      || !-z $self->lockfile    # have a size of zero
+      || !-w $self->lockfile    # and be writeable
       );
 
     # create the entire path, and remove the innermost directory
@@ -160,7 +160,7 @@ our $VERSION = '0.05';
       if !$self->pidfile;
 
     die 'A pidfile already exist, but is not a regular writable file'
-      if -e $self->pidfile && ( !-f $self->pidfile or !-w $self->pidfile );
+      if -e $self->pidfile && ( !-f $self->pidfile || !-w $self->pidfile );
 
     # create the entire path, and remove the innermost directory
     make_path( $self->pidfile ) && rmdir $self->pidfile
@@ -188,7 +188,7 @@ our $VERSION = '0.05';
       if !-f $self->pidfile || !-r $self->pidfile;
 
     open my $PID_FH, '<', $self->pidfile;
-    my $DAEMON_PID = do { local $/; <$PID_FH> };
+    my $DAEMON_PID = do { local $INPUT_RECORD_SEPARATOR = undef; <$PID_FH> };
     close $PID_FH;
 
     return $DAEMON_PID;
@@ -213,16 +213,16 @@ our $VERSION = '0.05';
     open STDERR, '>>', '/dev/null';
 
     # Fork once
-    defined( my $pid1 = fork ) or die "Can’t fork: $!";
+    defined( my $pid1 = fork ) or die "Can’t fork: $ERRNO";
     exit if $pid1;    # Parent exit
 
     # Fork twice
-    defined( my $pid2 = fork ) or die "Can’t fork: $!";
+    defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
     exit if $pid2;    # Parent exit
 
     # Become session leader
     POSIX::setsid
-      or die "Unable to to become session leader: $!";
+      or die "Unable to to become session leader: $ERRNO";
 
     # Return success!
     return 1;
@@ -278,7 +278,7 @@ our $VERSION = '0.05';
     my $PID = $self->_read_pid;
 
     say "Stopping PID: $PID";
-    kill 0, $PID and kill 'INT', $PID || do {
+    kill 0, $PID && kill 'INT', $PID || do {
       warn 'Not able to issue kill signal.';
       return 8;
     };
@@ -307,7 +307,7 @@ our $VERSION = '0.05';
 
       my $rc = kill 'HUP', $pid;
       $rc
-        ? say 'PID: $pid, was signaled to reload'
+        ? say "PID: $pid, was signaled to reload"
         : say "Failed to signal PID: $pid";
 
       return '0 but true';
