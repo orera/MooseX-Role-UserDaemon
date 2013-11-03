@@ -1,4 +1,4 @@
-package MooseX::UserDaemon;
+package MooseX::UserDaemon 0.05;
 
 use 5.014;
 use Moose::Role;
@@ -6,11 +6,10 @@ use autodie;
 use English qw(-no_match_vars);
 use Fcntl qw(:flock);
 use File::Basename qw();
+use File::HomeDir qw();
 use File::Path qw(make_path);
 use POSIX qw();
 use namespace::autoclean;
-
-our $VERSION = '0.05';
 
 {
   requires 'main';
@@ -67,7 +66,7 @@ our $VERSION = '0.05';
 
   sub _build_basedir {
     my ($self) = @_;
-    return join q{/.}, $ENV{'HOME'}, lc $self->_name;
+    return join q{/.}, File::HomeDir->my_home, lc $self->_name;
   }
 
   sub _build_lockfile {
@@ -278,7 +277,7 @@ our $VERSION = '0.05';
     my $PID = $self->_read_pid;
 
     say "Stopping PID: $PID";
-    kill 0, $PID && kill 'INT', $PID || do {
+    kill 0, $PID and kill 'INT', $PID or do {
       warn 'Not able to issue kill signal.';
       return 8;
     };
@@ -329,16 +328,16 @@ our $VERSION = '0.05';
     # Default to start.
     $command = 'start' if !$command;
 
-    # Validate that mode is valid
+    # Validate that mode is valid/approved
     if ( $command !~ $self->_valid_commands ) {
       say "Invalid command: $command";
       return 9;
     }
 
-    # Create run dir if none exists.
+    # Create base dir if none exists.
     return 1 if !-e $self->basedir && !make_path( $self->basedir );
 
-    # Change to running dir, fail if run dir is not a directory
+    # Change to running dir, fail if base dir is not a directory
     return 2 if !-d $self->basedir || !chdir $self->basedir;
 
     # Run!
