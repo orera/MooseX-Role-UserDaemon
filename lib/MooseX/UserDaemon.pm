@@ -203,30 +203,6 @@ use namespace::autoclean;
     return unlink $self->pidfile;
   }
 
-  sub _daemonize {
-    my ($self) = @_;
-
-    # Redirect STD* to /dev/null
-    open STDIN,  '<',  '/dev/null';
-    open STDOUT, '>>', '/dev/null';
-    open STDERR, '>>', '/dev/null';
-
-    # Fork once
-    defined( my $pid1 = fork ) or die "Can’t fork: $ERRNO";
-    exit if $pid1;    # Parent exit
-
-    # Fork twice
-    defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
-    exit if $pid2;    # Parent exit
-
-    # Become session leader
-    POSIX::setsid
-      or die "Unable to to become session leader: $ERRNO";
-
-    # Return success!
-    return 1;
-  }
-
   sub _is_running {
     my ($self) = @_;
 
@@ -237,12 +213,36 @@ use namespace::autoclean;
     return 1;                                    # running
   }
 
+  sub _daemonize {
+    my ($self) = @_;
+
+    # Fork once
+    defined( my $pid1 = fork ) or die "Can’t fork: $ERRNO";
+    return '0 but true' if $pid1;    # Original parent exit
+
+    # Redirect STD* to /dev/null
+    open STDIN,  '<',  '/dev/null';
+    open STDOUT, '>>', '/dev/null';
+    open STDERR, '>>', '/dev/null';
+
+    # Fork twice
+    defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
+    exit if $pid2;    # Intermediate parent exit
+
+    # Become session leader
+    POSIX::setsid
+      or die "Unable to to become session leader: $ERRNO";
+
+    # Return child returns false!
+    return;
+  }
+
   sub status {
     my ($self) = @_;
 
-    $self->_is_running
-      ? say 'Running with PID: ' . $self->_read_pid
-      : say 'Not running.';
+    say $self->_is_running
+      ? 'Running with PID: ' . $self->_read_pid
+      : 'Not running.';
 
     return '0 but true';
   }
@@ -255,9 +255,12 @@ use namespace::autoclean;
     say 'Starting...';
 
     # Do the fork, unless foreground mode is enabled
-    return 3 if !$self->foreground && !$self->_daemonize;
-
-    # Return output of main
+    if (!$self->foreground) {
+      my $daemonize_rc = $self->_daemonize;
+      return $daemonize_rc if defined $daemonize_rc; # Original parent returns
+    }
+    
+    # Child will return output of main
     return $self->main;
   }
 
