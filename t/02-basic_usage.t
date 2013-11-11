@@ -11,7 +11,7 @@ use Test::More;
 use Test::Output;
 
 BEGIN {
-  use_ok('MooseX::UserDaemon');
+  use_ok('MooseX::Role::UserDaemon');
 }
 
 {    # Minimal app
@@ -19,7 +19,7 @@ BEGIN {
   package App;
 
   use Moose;
-  with 'MooseX::UserDaemon';
+  with 'MooseX::Role::UserDaemon';
 
   my $run = 1;
   local $SIG{'INT'} = sub { $run = 0; };

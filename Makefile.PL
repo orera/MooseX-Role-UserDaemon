@@ -3,8 +3,8 @@
 use 5.014;
 use inc::Module::Install;
 
-name 'MooseX-UserDaemon';
-all_from 'lib/MooseX/UserDaemon.pm';
+name 'MooseX-Role-UserDaemon';
+all_from 'lib/MooseX/Role/UserDaemon.pm';
 license 'perl';
 
 requires 'Moose::Role'          => 0;
@@ -16,5 +16,6 @@ requires 'File::Path'           => 0;
 requires 'POSIX'                => 0;
 requires 'namespace::autoclean' => 0;
 
-test_requires 'Test::More' => '0';
+test_requires 'Test::More'   => '0';
+test_requires 'Test::Output' => '0';
 WriteAll;

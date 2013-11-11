@@ -1,4 +1,4 @@
-package MooseX::UserDaemon 0.05;
+package MooseX::Role::UserDaemon 0.05;
 
 use 5.014;
 use Moose::Role;
@@ -356,7 +356,7 @@ __END__
 
 =head1 NAME
 
-MooseX::UserDaemon - A moose role ment to simplify writing of user level perl daemons.
+MooseX::Role::UserDaemon - A moose role ment to simplify writing of user level perl daemons.
 
 =head1 VERSION
 
@@ -368,9 +368,9 @@ In your module:
 
     package YourApp;
     use Moose;
-    with 'MooseX::UserDaemon';
+    with 'MooseX::Role::UserDaemon';
 
-    # MooseX::UserDaemon requires the consuming class to implement main()
+    # MooseX::Role::UserDaemon requires the consuming class to implement main()
     sub main {
       while (1) {
         ...
@@ -412,7 +412,7 @@ In your module:
     # Enable use of commandline parameters
     with 'MooseX::Getopt';
 
-    with 'MooseX::UserDaemon';
+    with 'MooseX::Role::UserDaemon';
 
     # '+configfile' Only required if using MooseX::SimpleConfig
     has '+configfile' => (
@@ -505,15 +505,15 @@ Tore Andersson, C<< <tore.andersson at gmail.com> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-moosex-userdaemon at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MooseX-DaemonControl>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-moosex-role-userdaemon at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MooseX-Role-DaemonControl>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc MooseX::UserDaemon
+    perldoc MooseX::Role::UserDaemon
 
 You can also look for information at:
 
@@ -521,19 +521,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=MooseX-UserDaemon>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=MooseX-Role-UserDaemon>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/MooseX-UserDaemon>
+L<http://annocpan.org/dist/MooseX-Role-UserDaemon>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/MooseX-UserDaemon>
+L<http://cpanratings.perl.org/d/MooseX-Role-UserDaemon>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/MooseX-UserDaemon/>
+L<http://search.cpan.org/dist/MooseX-Role-UserDaemon/>
 
 =back
 

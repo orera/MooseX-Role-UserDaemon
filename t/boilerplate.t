@@ -49,7 +49,7 @@ TODO: {
     "placeholder date/time"       => qr(Date/time)
   );
 
-  module_boilerplate_ok('lib/MooseX/UserDaemon.pm');
+  module_boilerplate_ok('lib/MooseX/Role/UserDaemon.pm');
 
 
 }
