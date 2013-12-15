@@ -50,7 +50,4 @@ TODO: {
   );
 
   module_boilerplate_ok('lib/MooseX/Role/UserDaemon.pm');
-
-
 }
-
