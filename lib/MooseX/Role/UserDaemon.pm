@@ -125,8 +125,7 @@ use namespace::autoclean;
 
     # Finally open the file and place a lock on it
     open my $LOCK_FH, '>>', $self->lockfile;
-    flock $LOCK_FH, LOCK_EX | LOCK_NB
-      or return;
+    flock $LOCK_FH, LOCK_EX | LOCK_NB or return;
 
     # Maintain the lock troughout the runtime of the app. Store the FH.
     $self->_lock_fh($LOCK_FH);
@@ -141,14 +140,12 @@ use namespace::autoclean;
       if !$self->_lock_fh;
 
     close $self->_lock_fh or do {
-      warn 'Failed to close lockfile filehandle: ' . $ERRNO;
+      warn "Failed to close lockfile filehandle: $ERRNO";
       return;
     };
 
-    # Clear the lock filehandle
     $self->clear_lock_fh;
 
-    # And lastly unlink the lockfile.
     return unlink $self->lockfile;
   }
 
@@ -218,7 +215,7 @@ use namespace::autoclean;
 
     # Fork once
     defined( my $pid1 = fork ) or die "Can’t fork: $ERRNO";
-    return '0 but true' if $pid1;    # Original parent exit
+    return '0 but true' if $pid1;                # Original parent exit
 
     # Redirect STD* to /dev/null
     open STDIN,  '<',  '/dev/null';
@@ -227,7 +224,7 @@ use namespace::autoclean;
 
     # Fork twice
     defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
-    exit if $pid2;    # Intermediate parent exit
+    exit if $pid2;                               # Intermediate parent exit
 
     # Become session leader
     POSIX::setsid
@@ -255,11 +252,11 @@ use namespace::autoclean;
     say 'Starting...';
 
     # Do the fork, unless foreground mode is enabled
-    if (!$self->foreground) {
+    if ( !$self->foreground ) {
       my $daemonize_rc = $self->_daemonize;
       return $daemonize_rc if defined $daemonize_rc; # Original parent returns
     }
-    
+
     # Child will return output of main
     return $self->main;
   }
@@ -356,7 +353,7 @@ __END__
 
 =head1 NAME
 
-MooseX::Role::UserDaemon - A moose role ment to simplify writing of user level perl daemons.
+MooseX::Role::UserDaemon - Simplify writing of user space daemons
 
 =head1 VERSION
 
@@ -368,15 +365,24 @@ In your module:
 
     package YourApp;
     use Moose;
-    with 'MooseX::Role::UserDaemon';
+    with qw(MooseX::Role::UserDaemon);
 
-    # MooseX::Role::UserDaemon requires the consuming class to implement main()
+    # MooseX::UserDaemon requires the consuming class to implement main()
     sub main {
-      while (1) {
+      my ($self) = @_;
+
+      # the user have to implement capturing signals and exiting.
+      my $run = 1;
+      local $SIG{'INT'} = sub { $run = 0; };
+
+      FOREVER_LOOP:
+      while ($run) {
         ...
       }
       
-      return '0 but true'; # Return '0 but true' on success.
+      # It is recomended that main() return '0 but true' on success.
+      # the return value of main is feed directly to exit()
+      return '0 but true';
     }
 
 In your script:
@@ -400,32 +406,40 @@ On the commanline:
 	$ myapp.pl stop
 		Stopping PID: ...
 
-Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt:
+Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
 
 In your module:
     package YourApp;
     use Moose;
 
-    # Enable use of config file
-    with 'MooseX::SimpleConfig';
+    # Enable use of configfile and commandline parameters as well
+    with qw(MooseX::SimpleConfig MooseX::Getopt MooseX::Role::UserDaemon);
 
-    # Enable use of commandline parameters
-    with 'MooseX::Getopt';
-
-    with 'MooseX::Role::UserDaemon';
-
-    # '+configfile' Only required if using MooseX::SimpleConfig
+    # '+configfile' Only required when using MooseX::SimpleConfig
     has '+configfile' => (
       is            => 'ro',
       isa           => 'Str',
-      default       => $ENV{'HOME'} . '/.yourapp/yourapp.conf',
+      default       =>
+        sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
       documentation => 'Use custom configfile.',
     );
 
+    # MooseX::UserDaemon requires the consuming class to implement main()
     sub main {
-      while (1) {
-        ...
+      my ($self) = @_;
+
+      # the user have to implement capturing signals and exiting.
+      my $run = 1;
+      local $SIG{'INT'} = sub { $run = 0; };
+
+      FOREVER_LOOP:
+      while ($run) {
+        sleep 1; # This is where you place your code
       }
+      
+      # It is recomended that main() return '0 but true' on success.
+      # the return value of main is feed directly to exit()
+      return '0 but true';
     }
 
 In your script:
@@ -451,8 +465,8 @@ On the commanline:
 
 =head1 DESCRIPTION
 
-	This module aims to simplify the process of writing user level daemons, that runs from the users home directory.
-	This module should NOT under any circumstance be used to implement system level daemons.
+	MooseX::Role::UserDaemon aims to simplify the process of writing user space daemons.
+	This module should NOT under any circumstance be used to implement system space daemons.
 
 	It implements (by default):
 	Daemonization / forking, running your script in the background detached from the terminal.
@@ -461,7 +475,7 @@ On the commanline:
 	Facilities to issue start/stop/restart/reload and status commands to your daemon while running.
 	
 	It plays nice with MooseX::Getopt and MooseX::SimpleConfig.
-
+	
 =head1 SUBROUTINES/METHODS
 
 =head2 run
@@ -477,9 +491,17 @@ On the commanline:
   New commands can be added by the consuming class, it which case the attribute '_valid_commands' needs to be updated for 'run()' to allow the command to be executed.
 	'_valid_commands' is a RegexpRef and the default value is: qr/status|start|stop|reload|restart/
 
+  To override by defining your own _valid_commands in the consuming class.
+
+  has '_valid_commands' => (
+    is      => 'ro',
+    isa     => 'RegexpRef',
+    default => sub {qr/status|start|stop|reload|restart|customcommand/xms},
+  );
+
 =head2 status
 
-	Checks if the app is running or not and prints to STDOUT.
+	Checks if the app is running, print status to STDOUT.
 
 =head2 start
 
@@ -497,17 +519,11 @@ On the commanline:
 =head2 reload
 
 	Reload issues a "HUP" signal to the PID listed in the pidfile.
-	It is up to the author to trap this signal and do the appropriate thing, usualy to reload the configuration file.
+	It is up to the author to trap this signal and do the appropriate thing, usualy to reload configuration files.
 
 =head1 AUTHOR
 
-Tore Andersson, C<< <tore.andersson at gmail.com> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-moosex-role-userdaemon at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MooseX-Role-DaemonControl>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
+Tore Andersson
 
 =head1 SUPPORT
 
@@ -515,33 +531,9 @@ You can find documentation for this module with the perldoc command.
 
     perldoc MooseX::Role::UserDaemon
 
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker (report bugs here)
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=MooseX-Role-UserDaemon>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/MooseX-Role-UserDaemon>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/MooseX-Role-UserDaemon>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/MooseX-Role-UserDaemon/>
-
-=back
-
-=head1 ACKNOWLEDGEMENTS
-
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2013 Tore Andersson.
+Copyright 2013 Tore Andersson
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published

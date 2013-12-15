@@ -1,4 +1,6 @@
-MooseX-UserDaemon
+NAME
+
+MooseX::Role::UserDaemon
 
 VERSION
 
@@ -10,15 +12,24 @@ In your module:
 
     package YourApp;
     use Moose;
-    with 'MooseX::UserDaemon';
+    with qw(MooseX::Role::UserDaemon);
 
     # MooseX::UserDaemon requires the consuming class to implement main()
     sub main {
-      while (1) {
+      my ($self) = @_;
+
+      # the user have to implement capturing signals and exiting.
+      my $run = 1;
+      local $SIG{'INT'} = sub { $run = 0; };
+
+      FOREVER_LOOP:
+      while ($run) {
         ...
       }
       
-      return '0 but true'; # Return '0 but true' on success.
+      # It is recomended that main() return '0 but true' on success.
+      # the return value of main is feed directly to exit()
+      return '0 but true';
     }
 
 In your script:
@@ -42,32 +53,40 @@ On the commanline:
 	$ myapp.pl stop
 		Stopping PID: ...
 
-Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt:
+Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
 
 In your module:
     package YourApp;
     use Moose;
 
-    # Enable use of config file
-    with 'MooseX::SimpleConfig';
+    # Enable use of configfile and commandline parameters as well
+    with qw(MooseX::SimpleConfig MooseX::Getopt MooseX::Role::UserDaemon);
 
-    # Enable use of commandline parameters
-    with 'MooseX::Getopt';
-
-    with 'MooseX::UserDaemon';
-
-    # '+configfile' Only required if using MooseX::SimpleConfig
+    # '+configfile' Only required when using MooseX::SimpleConfig
     has '+configfile' => (
       is            => 'ro',
       isa           => 'Str',
-      default       => $ENV{'HOME'} . '/.yourapp/yourapp.conf',
+      default       =>
+        sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
       documentation => 'Use custom configfile.',
     );
 
+    # MooseX::UserDaemon requires the consuming class to implement main()
     sub main {
-      while (1) {
-        ...
+      my ($self) = @_;
+
+      # the user have to implement capturing signals and exiting.
+      my $run = 1;
+      local $SIG{'INT'} = sub { $run = 0; };
+
+      FOREVER_LOOP:
+      while ($run) {
+        sleep 1; # This is where you place your code
       }
+      
+      # It is recomended that main() return '0 but true' on success.
+      # the return value of main is feed directly to exit()
+      return '0 but true';
     }
 
 In your script:
@@ -91,7 +110,6 @@ On the commanline:
 	$ myapp.pl stop
 		Stopping PID: ...
 
-
 INSTALLATION
 
 To install this module, run the following commands:
@@ -106,22 +124,7 @@ SUPPORT AND DOCUMENTATION
 After installing, you can find documentation for this module with the
 perldoc command.
 
-    perldoc MooseX::UserDaemon
-
-You can also look for information at:
-
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=MooseX-UserDaemon
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/MooseX-UserDaemon
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/MooseX-UserDaemon
-
-    Search CPAN
-        http://search.cpan.org/dist/MooseX-UserDaemon/
-
+    perldoc MooseX::Role::UserDaemon
 
 LICENSE AND COPYRIGHT
 

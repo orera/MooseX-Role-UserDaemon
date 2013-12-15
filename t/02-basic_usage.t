@@ -10,9 +10,7 @@ use File::Temp qw();
 use Test::More;
 use Test::Output;
 
-BEGIN {
-  use_ok('MooseX::Role::UserDaemon');
-}
+BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
 {    # Minimal app
 
@@ -68,7 +66,6 @@ can_ok( $app, @subs );
   ok( !-e $app->pidfile, 'pidfile does not exist' );
 
   # Test public methods
-
   my @modes = qw(status start status restart stop status restart stop stop);
 
   my %mode_prints = (
@@ -90,14 +87,13 @@ can_ok( $app, @subs );
   my $stdout;
 
   foreach my $mode (@modes) {
-
-    sleep 2;    # Ugly but necessary, forking and locking take time.
+    sleep 1;    # Ugly but necessary, forking and locking take time.
 
     # Redirect STDOUT to variable.
     open my $stdout_fh, '>', \$stdout;
     select($stdout_fh);
 
-    my $RE = shift @{ $mode_prints{$mode} };
+    my $regexp = shift @{ $mode_prints{$mode} };
 
     # Return values
     my $mode_rc = $app->$mode;
@@ -105,14 +101,13 @@ can_ok( $app, @subs );
     ok( $mode_rc, "$mode() return value is also true" );
 
     # Standard out
-    like( $stdout, $RE, "$mode() STDOUT matched $RE" );
+    like( $stdout, $regexp, "$mode() STDOUT matched $regexp" );
 
     close $stdout_fh;
   }
 
   # Back to regular STDOUT
   select(STDOUT);
-
 }
 
 done_testing;

@@ -7,15 +7,17 @@ name 'MooseX-Role-UserDaemon';
 all_from 'lib/MooseX/Role/UserDaemon.pm';
 license 'perl';
 
-requires 'Moose::Role'          => 0;
-requires 'English'              => 0;
-requires 'Fcntl'                => 0;
-requires 'File::Basename'       => 0;
-requires 'File::HomeDir'        => 0;
-requires 'File::Path'           => 0;
-requires 'POSIX'                => 0;
-requires 'namespace::autoclean' => 0;
+requires 'Moose::Role';
+requires 'autodie';
+requires 'English';
+requires 'Fcntl';
+requires 'File::Basename';
+requires 'File::HomeDir';
+requires 'File::Path';
+requires 'POSIX';
+requires 'namespace::autoclean';
 
-test_requires 'Test::More'   => '0';
-test_requires 'Test::Output' => '0';
+test_requires 'Test::More';
+test_requires 'Test::Output';
+
 WriteAll;
