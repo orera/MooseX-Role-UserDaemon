@@ -120,12 +120,17 @@ use namespace::autoclean;
       );
 
     # create the entire path, and remove the innermost directory
-    make_path( $self->lockfile ) && rmdir $self->lockfile
-      if !-e $self->lockfile;
+    if ( !-e $self->lockfile ) {
+      make_path( $self->lockfile );
+      rmdir $self->lockfile;
+    }
 
     # Finally open the file and place a lock on it
+    ## no critic (RequireBriefOpen)
     open my $LOCK_FH, '>>', $self->lockfile;
     flock $LOCK_FH, LOCK_EX | LOCK_NB or return;
+
+    ## use critic
 
     # Maintain the lock troughout the runtime of the app. Store the FH.
     $self->_lock_fh($LOCK_FH);
@@ -159,12 +164,18 @@ use namespace::autoclean;
       if -e $self->pidfile && ( !-f $self->pidfile || !-w $self->pidfile );
 
     # create the entire path, and remove the innermost directory
-    make_path( $self->pidfile ) && rmdir $self->pidfile
-      if !-e $self->pidfile;
+    if ( !-e $self->pidfile ) {
+      make_path( $self->pidfile );
+      rmdir $self->pidfile;
+    }
 
     # write the actual file
     {
+      ## no critic (ProhibitLocalVars)
       local $OUTPUT_AUTOFLUSH = 1;
+
+      ## use critic
+
       open my $PID_FH, '>', $self->pidfile;
       print {$PID_FH} $PID;
       close $PID_FH;
@@ -326,7 +337,7 @@ use namespace::autoclean;
       : shift @ARGV;               # Else get it from @ARGV
 
     # Default to start.
-    $command = 'start' if !$command;
+    $command ||= 'start';
 
     # Validate that mode is valid/approved
     if ( $command !~ $self->_valid_commands ) {
