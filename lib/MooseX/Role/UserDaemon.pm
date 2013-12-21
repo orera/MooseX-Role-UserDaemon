@@ -268,7 +268,7 @@ use namespace::autoclean;
       return $daemonize_rc if defined $daemonize_rc; # Original parent returns
     }
 
-    # Child will return output of main
+    # Child will run main
     return $self->main;
   }
 
@@ -293,8 +293,13 @@ use namespace::autoclean;
       return 8;
     };
 
+    my $timeout = 3;
+    foreach (1 .. $timeout) {
+      if ($PID == $self->_read_pid && $self->_is_running) { sleep 1; }
+    }
+
     # Not dead yet?
-    sleep 1 while $self->_is_running;
+    sleep 1 while $self->_is_running; ## no critic (ProhibitPostfixControls)
 
     return '0 but true';
   }
