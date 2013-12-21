@@ -29,6 +29,13 @@ use namespace::autoclean;
     default => sub {qr/status|start|stop|reload|restart/xms},
   );
 
+  has 'timeout' => (
+    is      => 'ro',
+    isa     => 'Int',
+    default => 5,
+    documentation => 'Time in seconds to wait for daemon to shut down',
+  );
+
   has 'foreground' => (
     is      => 'ro',
     isa     => 'Int',
@@ -285,21 +292,25 @@ use namespace::autoclean;
       return '0 but true';
     }
 
-    my $PID = $self->_read_pid;
+    my $pid = $self->_read_pid;
 
-    say "Stopping PID: $PID";
-    kill 0, $PID and kill 'INT', $PID or do {
+    say "Stopping PID: $pid";
+    kill 0, $pid and kill 'INT', $pid or do {
       warn 'Not able to issue kill signal.';
       return 8;
     };
 
-    my $timeout = 3;
-    foreach (1 .. $timeout) {
-      if ($PID == $self->_read_pid && $self->_is_running) { sleep 1; }
+    # using alarm and a blocking flock would be more robust.
+    # but may cause problems on windows. (untested)
+    WAIT_FOR_EXIT:
+    foreach my $wait_for_exit (1 .. $self->timeout) {
+      sleep 1;
+      last WAIT_FOR_EXIT if !$self->_is_running;
+      if ($wait_for_exit == $self->timeout) {
+        say 'Timed out waiting for process to exit';
+        return;
+      }
     }
-
-    # Not dead yet?
-    sleep 1 while $self->_is_running; ## no critic (ProhibitPostfixControls)
 
     return '0 but true';
   }
@@ -307,10 +318,13 @@ use namespace::autoclean;
   sub restart {
     my ($self) = @_;
 
-    # Stop the app.
-    $self->stop;
+    # Stop the process
+    if (!defined $self->stop) {
+      say 'restart aborted';
+      return;
+    }
 
-    # Start a new
+    # Process stopped ok, start a new
     return $self->start;
   }
 
