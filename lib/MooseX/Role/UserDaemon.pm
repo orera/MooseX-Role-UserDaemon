@@ -30,9 +30,9 @@ use namespace::autoclean;
   );
 
   has 'timeout' => (
-    is      => 'ro',
-    isa     => 'Int',
-    default => 5,
+    is            => 'ro',
+    isa           => 'Int',
+    default       => 5,
     documentation => 'Time in seconds to wait for daemon to shut down',
   );
 
@@ -112,6 +112,21 @@ use namespace::autoclean;
     return 7 if !$self->_unlock;
   };
 
+  sub _lockfile_is_valid {
+    my ($self) = @_;
+
+    die 'lockfile is not a regular file'
+      if !-f $self->lockfile;
+
+    die 'lockfile is not a empty file'
+      if !-z $self->lockfile;
+
+    die 'lockfile is writeable by the current process'
+      if !-w $self->lockfile;
+
+    return 1;
+  }
+
   sub _lock {
     my ($self) = @_;
 
@@ -119,12 +134,7 @@ use namespace::autoclean;
       if !$self->lockfile;
 
     die 'A lockfile already exists but it is not an empty writable file'
-      if -e $self->lockfile    # If it exists it:
-      && (
-      !-f $self->lockfile       # must be a regular file
-      || !-z $self->lockfile    # have a size of zero
-      || !-w $self->lockfile    # and be writeable
-      );
+      if -e $self->lockfile && !$self->_lockfile_is_valid;
 
     # create the entire path, and remove the innermost directory
     if ( !-e $self->lockfile ) {
@@ -151,14 +161,17 @@ use namespace::autoclean;
     die 'Trying to unlock a non-existing lockfile filehandle'
       if !$self->_lock_fh;
 
-    close $self->_lock_fh or do {
+    my $close_rc = close $self->_lock_fh;
+
+    if ( !$close_rc ) {
       warn "Failed to close lockfile filehandle: $ERRNO";
-      return;
-    };
+    }
+    else {
+      $self->clear_lock_fh;
+      unlink $self->lockfile if $self->_lockfile_is_valid;
+    }
 
-    $self->clear_lock_fh;
-
-    return unlink $self->lockfile;
+    return $close_rc;
   }
 
   sub _write_pid {
@@ -194,9 +207,11 @@ use namespace::autoclean;
   sub _read_pid {
     my ($self) = @_;
 
-    # Return undef if no pidfile.
-    return
-      if !$self->pidfile || !-e $self->pidfile;
+    die 'Must specify a path to be used as a pidfile.'
+      if !$self->pidfile;
+
+    die 'pidfile does not exist'
+      if !-e $self->pidfile;
 
     die 'pidfile is not a regular file or is not readable'
       if !-f $self->pidfile || !-r $self->pidfile;
@@ -211,9 +226,14 @@ use namespace::autoclean;
   sub _delete_pid {
     my ($self) = @_;
 
-    # Return undef if no pidfile.
-    return
-      if !$self->pidfile || !-e $self->pidfile;
+    die 'Must specify a path to be used as a pidfile.'
+      if !$self->pidfile;
+
+    die 'pidfile does not exist'
+      if !-e $self->pidfile;
+
+    die 'pidfile is not a regular file or is not writable'
+      if !-f $self->pidfile || !-w $self->pidfile;
 
     return unlink $self->pidfile;
   }
@@ -224,8 +244,12 @@ use namespace::autoclean;
     # return false if lockfile is not in use
     return if !$self->lockfile || !-e $self->lockfile;
 
-    return if $self->_lock && $self->_unlock;    # Not running
-    return 1;                                    # running
+    if ( $self->_lock ) {    # Not running
+      $self->_unlock;
+      return;
+    }
+
+    return 1;                # running
   }
 
   sub _daemonize {
@@ -233,20 +257,20 @@ use namespace::autoclean;
 
     # Fork once
     defined( my $pid1 = fork ) or die "Can’t fork: $ERRNO";
-    return '0 but true' if $pid1;                # Original parent exit
+    return '0 but true' if $pid1;    # Original parent exit
 
     # Redirect STD* to /dev/null
     open STDIN,  '<',  '/dev/null';
     open STDOUT, '>>', '/dev/null';
     open STDERR, '>>', '/dev/null';
 
-    # Fork twice
-    defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
-    exit if $pid2;                               # Intermediate parent exit
-
     # Become session leader
     POSIX::setsid
       or die "Unable to to become session leader: $ERRNO";
+
+    # Fork twice
+    defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
+    exit if $pid2;    # Intermediate parent exit
 
     # Return child returns false!
     return;
@@ -302,13 +326,13 @@ use namespace::autoclean;
 
     # using alarm and a blocking flock would be more robust.
     # but may cause problems on windows. (untested)
-    WAIT_FOR_EXIT:
-    foreach my $wait_for_exit (1 .. $self->timeout) {
+  WAIT_FOR_EXIT:
+    foreach my $wait_for_exit ( 1 .. $self->timeout ) {
       sleep 1;
       last WAIT_FOR_EXIT if !$self->_is_running;
-      if ($wait_for_exit == $self->timeout) {
+      if ( $wait_for_exit == $self->timeout ) {
         say 'Timed out waiting for process to exit';
-        return;
+        return 0;
       }
     }
 
@@ -319,9 +343,9 @@ use namespace::autoclean;
     my ($self) = @_;
 
     # Stop the process
-    if (!defined $self->stop) {
+    if ( !$self->stop ) {
       say 'restart aborted';
-      return;
+      return 0;
     }
 
     # Process stopped ok, start a new
@@ -335,9 +359,9 @@ use namespace::autoclean;
       my $pid = $self->_read_pid;
 
       my $rc = kill 'HUP', $pid;
-      $rc
-        ? say "PID: $pid, was signaled to reload"
-        : say "Failed to signal PID: $pid";
+      say $rc
+        ? "PID: $pid, was signaled to reload"
+        : "Failed to signal PID: $pid";
 
       return '0 but true';
     }
