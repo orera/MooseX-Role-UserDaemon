@@ -30,20 +30,20 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   }
 }
 
-my $app = App->new;
-isa_ok( $app, 'App' );
-
-# Check for valid methods
-my @subs = qw(
-  start       stop      status
-  restart     reload    run
-  _lock       _unlock   _is_running
-  _write_pid  _read_pid _delete_pid
-  _daemonize
-);
-can_ok( $app, @subs );
-
 {
+  my $app = App->new;
+  isa_ok( $app, 'App' );
+
+  # Check for valid methods
+  my @subs = qw(
+    start       stop      status
+    restart     reload    run
+    _lock       _unlock   _is_running
+    _write_pid  _read_pid _delete_pid
+    _daemonize
+  );
+  can_ok( $app, @subs );
+
   local $ENV{'HOME'} = File::Temp::tempdir;
 
   # Test _private methods
