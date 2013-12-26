@@ -40,7 +40,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     restart     reload    run
     _lock       _unlock   _is_running
     _write_pid  _read_pid _delete_pid
-    _daemonize
+    _daemonize  _lockfile_is_valid
   );
   can_ok( $app, @subs );
 

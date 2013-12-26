@@ -8,6 +8,7 @@ use Data::Dumper qw(Dumper);
 use English qw(-no_match_vars);
 use File::Path qw(make_path);
 use File::Temp qw();
+use Readonly;
 use Test::Most;
 use Test::Output;
 
@@ -31,9 +32,9 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   }
 }
 
-my $rw_mode = 0744;
-my $ro_mode = 0444;
-my $no_mode = 0000;
+Readonly my $rw_mode => 0744;
+Readonly my $ro_mode => 0444;
+Readonly my $no_mode => 0000;
 
 {
   #
@@ -49,11 +50,11 @@ my $no_mode = 0000;
   unlink $app->lockfile
     if -e $app->lockfile;
 
-  ok(!-e $app->lockfile, 'No lockfile exist before first lock');
+  ok( !-e $app->lockfile, 'No lockfile exist before first lock' );
   $app->_lock;
-  ok(-e $app->lockfile, 'Lockfile exist after locking');
+  ok( -e $app->lockfile, 'Lockfile exist after locking' );
   $app->_unlock;
-  ok(!-e $app->lockfile, 'Lockfile have been removed after unlocking');
+  ok( !-e $app->lockfile, 'Lockfile have been removed after unlocking' );
 
   my $original_lockfile = $app->lockfile;
   $app->lockfile('');
@@ -64,7 +65,7 @@ my $no_mode = 0000;
   }
 
   $app->lockfile($original_lockfile);
-  make_path($app->lockfile);
+  make_path( $app->lockfile );
 
   # Lockfile is a directory
   foreach my $sub (qw(_lock _unlock)) {
@@ -75,7 +76,7 @@ my $no_mode = 0000;
   open my $lockfile_fh, '>', $app->lockfile;
   print {$lockfile_fh} 'some content';
   close $lockfile_fh;
-  
+
   # Lockfile contains data
   foreach my $sub (qw(_lock _unlock)) {
     dies_ok { $app->$sub } "$sub die when lockfile contain data";
@@ -84,7 +85,7 @@ my $no_mode = 0000;
   # Empty the file
   open $lockfile_fh, '>', $app->lockfile;
   close $lockfile_fh;
-  
+
   chmod $ro_mode, $app->lockfile;
 
   # Lockfile contains data
@@ -102,7 +103,7 @@ my $no_mode = 0000;
 
 {
   #
-  # Lockfile tests
+  # PID file tests
   #
 
   my $app = App->new;
@@ -110,16 +111,16 @@ my $no_mode = 0000;
 
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
-  
-  ok(!-e $app->pidfile, 'No PID file');
+
+  ok( !-e $app->pidfile, 'No PID file' );
   $app->_write_pid;
-  ok(-e $app->pidfile, 'PID file exist');
+  ok( -e $app->pidfile, 'PID file exist' );
   $app->_delete_pid;
-  ok(!-e $app->pidfile, 'PID file have been removed');
+  ok( !-e $app->pidfile, 'PID file have been removed' );
 
   my $original_pidfile = $app->pidfile;
   $app->pidfile('');
- 
+
   # PID file not specified
   foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
     dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
@@ -128,7 +129,7 @@ my $no_mode = 0000;
   $app->pidfile($original_pidfile);
 
   # PID file is not a file
-  make_path($app->pidfile);
+  make_path( $app->pidfile );
 
   foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
     dies_ok { $app->$operation } "$operation die when pidfile is a directory";
@@ -138,14 +139,16 @@ my $no_mode = 0000;
 
   # PID file is not writeable
   $app->_write_pid;
-  
+
   foreach my $operation (qw(_write_pid _delete_pid)) {
     next if $UID == 0;
     chmod $ro_mode, $app->pidfile;
-    dies_ok { $app->$operation } "$operation die when pidfile is not writable";
+    dies_ok { $app->$operation }
+    "$operation die when pidfile is not writable";
   }
 
-  if ($UID != 0) {
+  if ( $UID != 0 ) {
+
     # PID file is not readable
     chmod $no_mode, $app->pidfile;
     dies_ok { $app->_read_pid } '_read_pid die when pidfile is not readable';
@@ -157,7 +160,9 @@ my $no_mode = 0000;
   # PID file have been removed unexpectedly
   foreach my $operation (qw(_read_pid _delete_pid)) {
     dies_ok { $app->$operation } "$operation die when pidfile does not exist";
-  } 
+  }
 }
 
 done_testing;
+
+__END__
