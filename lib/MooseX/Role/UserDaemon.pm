@@ -326,7 +326,7 @@ use namespace::autoclean;
 
     # using alarm and a blocking flock would be more robust.
     # but may cause problems on windows. (untested)
-  WAIT_FOR_EXIT:
+    WAIT_FOR_EXIT:
     foreach my $wait_for_exit ( 1 .. $self->timeout ) {
       sleep 1;
       last WAIT_FOR_EXIT if !$self->_is_running;
@@ -449,15 +449,15 @@ In your script:
 On the commanline:
 
 	Start your app
-	$ myapp.pl start
+	$ yourapp.pl start
 		Starting...
 
 	Check your status
-	$ myapp.pl status
+	$ yourapp.pl status
 		Running with PID: ...
 
 	Stop your app
-	$ myapp.pl stop
+	$ yourapp.pl stop
 		Stopping PID: ...
 
 Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
@@ -506,30 +506,62 @@ In your script:
 On the commanline:
 
 	Start your app
-	$ myapp.pl start
+	$ yourapp.pl start
 		Starting...
 
 	Check your status
-	$ myapp.pl status
+	$ yourapp.pl status
 		Running with PID: ...
 
 	Stop your app
-	$ myapp.pl stop
+	$ yourapp.pl stop
 		Stopping PID: ...
 
 =head1 DESCRIPTION
 
-	MooseX::Role::UserDaemon aims to simplify the process of writing user space daemons.
-	This module should NOT under any circumstance be used to implement system space daemons.
+	MooseX::Role::UserDaemon aims to simplify implementation of daemons and apps
+	ment to be run from a normal users home directory.
+	This module is not suited for implementing daemons running as root or other
+	system users.
 
-	It implements (by default):
-	Daemonization / forking, running your script in the background detached from the terminal.
-	Lockfile functionality to ensure only one running instance at any given time.
-	Pidfile functionality to allow you find the process id of any running instace.
-	Facilities to issue start/stop/restart/reload and status commands to your daemon while running.
-	
-	It plays nice with MooseX::Getopt and MooseX::SimpleConfig.
-	
+  When using this module your script will by default:
+  1. Create a hidden folder in the users home directory with the same name as
+  the script itself. So YouApp.pl will create a directory ~/.yourapp.pl
+  
+  2. chdir to this directory.
+  
+  3. Daemonize by double forking.
+
+  4. Create a lockfile named lock and place a "flock" on the file. This lock 
+  will be in place until the app shuts down.
+  
+  5. Create a pidfile named pid.
+
+  6. run the main() subroutine.
+
+  Five commands are implemented by default, start, stop, restart, reload and
+  status.
+
+=head2 Start (default)
+  Will launch the application according to the description above.
+
+=head2 Stop
+  Will read the pid from the pidfile and issue a TERM signal.
+
+=head2 Restart
+  Restart is the same as running stop then start again.
+
+=head2 Reload
+  Will read the pid from the pidfile and issue a HUP signal.
+
+=head2 Status
+  Will read the pid from the pidfile.
+
+=back
+
+  MooseX::Role::UserDaemon was originaly developed for an application that also
+  used MooseX::Getopt and MooseX::SimpleConfig.
+
 =head1 SUBROUTINES/METHODS
 
 =head2 run
