@@ -1,5 +1,13 @@
 MooseX::Role::UserDaemon Version 0.05
 
+DESCRIPTION
+
+A moose role ment to simplify writing of perl daemons and scripts
+running as a normal user. It implements:
+  1. A lockfile to ensure only one running instace at any given time.
+  2. A pidfile to we can find the running process id if we need to signal it.
+  3. Daemonize with double forking for running processes in the background
+
 INSTALLATION
 
 To install this module, run the following commands:
