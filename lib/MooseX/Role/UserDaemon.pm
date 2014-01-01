@@ -17,10 +17,7 @@ use namespace::autoclean;
   has '_name' => (
     is      => 'ro',
     isa     => 'Str',
-    default => sub {
-      my $name = File::Basename::fileparse $PROGRAM_NAME;
-      return $name;
-    },
+    default => sub { File::Basename::fileparse $PROGRAM_NAME },
   );
 
   has '_valid_commands' => (
@@ -30,10 +27,11 @@ use namespace::autoclean;
   );
 
   has 'timeout' => (
-    is            => 'ro',
-    isa           => 'Int',
-    default       => 5,
-    documentation => 'Time in seconds to wait for daemon to shut down',
+    is      => 'ro',
+    isa     => 'Int',
+    default => 5,
+    documentation =>
+      '--timeout=n, default = 5, time in seconds to wait for the daemon to exit',
   );
 
   has 'foreground' => (
@@ -41,28 +39,28 @@ use namespace::autoclean;
     isa     => 'Int',
     default => 0,
     documentation =>
-      'Run the app in the foreground, instead of daemonizing it.',
+      '--foreground=1 will run the app in the foreground, instead of daemonizing it.',
   );
 
   has 'basedir' => (
     is            => 'ro',
     isa           => 'Str',
     lazy_build    => 1,
-    documentation => 'Use custom base directory.',
+    documentation => '--basedir="/custom/path", Use custom base directory.',
   );
 
   has 'lockfile' => (
     is            => 'rw',
     isa           => 'Str',
     lazy_build    => 1,
-    documentation => 'Use custom lockfile.',
+    documentation => '--basedir=/path/to/file, Use custom lockfile.',
   );
 
   has 'pidfile' => (
     is            => 'rw',
     isa           => 'Str',
     lazy_build    => 1,
-    documentation => 'Use custom pidfile.',
+    documentation => '--pidfile=/path/to/file, Use custom pidfile.',
   );
 
   has '_lock_fh' => (
@@ -405,6 +403,8 @@ __END__
 
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 MooseX::Role::UserDaemon - Simplify writing of user space daemons
@@ -415,197 +415,224 @@ Version 0.05
 
 =head1 SYNOPSIS
 
-In your module:
+# In your module:
 
-    package YourApp;
-    use Moose;
-    with qw(MooseX::Role::UserDaemon);
+  package YourApp;
+  use Moose;
+  with qw(MooseX::Role::UserDaemon);
 
-    # MooseX::UserDaemon requires the consuming class to implement main()
-    sub main {
-      my ($self) = @_;
+  # MooseX::Role::UserDaemon requires the consuming class to implement main()
+  sub main {
+    my ($self) = @_;
 
-      # the user have to implement capturing signals and exiting.
-      my $run = 1;
-      local $SIG{'INT'} = sub { $run = 0; };
+    # the user have to implement capturing signals and exiting.
+    my $run = 1;
+    local $SIG{'INT'} = sub { $run = 0; };
 
-      FOREVER_LOOP:
-      while ($run) {
-        ...
-      }
-      
-      # It is recomended that main() return '0 but true' on success.
-      # the return value of main is feed directly to exit()
-      return '0 but true';
+    FOREVER_LOOP:
+    while ($run) {
+      ...
     }
 
-In your script:
+    # It is recomended that main() return '0 but true' on success.
+    # the return value of main is feed directly to exit()
+    return '0 but true';
+  }
 
-    use YourApp;
-    my $app = YourApp->new;
+# In your script:
 
-    exit $app->run unless caller 0;
+  use YourApp;
+  my $app = YourApp->new;
 
-On the commanline:
+  exit $app->run unless caller 0;
 
-	Start your app
-	$ yourapp.pl start
-		Starting...
+# On the commanline:
 
-	Check your status
-	$ yourapp.pl status
-		Running with PID: ...
+  Start your app
+  $ yourapp.pl start
+    Starting...
 
-	Stop your app
-	$ yourapp.pl stop
-		Stopping PID: ...
+  Check your status
+  $ yourapp.pl status
+    Running with PID: ...
 
-Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
+  Stop your app
+  $ yourapp.pl stop
+    Stopping PID: ...
 
-In your module:
-    package YourApp;
-    use Moose;
+# Or preferably in combination with MooseX::SimpleConfig and/or
+MooseX::Getopt
 
-    # Enable use of configfile and commandline parameters as well
-    with qw(MooseX::SimpleConfig MooseX::Getopt MooseX::Role::UserDaemon);
+# In your module:   package YourApp;   use Moose;
 
-    # '+configfile' Only required when using MooseX::SimpleConfig
-    has '+configfile' => (
-      is            => 'ro',
-      isa           => 'Str',
-      default       =>
-        sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
-      documentation => 'Use custom configfile.',
-    );
+  # Enable use of configfile and commandline parameters as well
+  with qw(MooseX::Role::UserDaemon MooseX::SimpleConfig MooseX::Getopt);
 
-    # MooseX::UserDaemon requires the consuming class to implement main()
-    sub main {
-      my ($self) = @_;
+  # '+configfile' Only required when using MooseX::SimpleConfig
+  has '+configfile' => (
+    is            => 'ro',
+    isa           => 'Str',
+    default       =>
+      sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
+    documentation => 'Use custom configfile.', # Getopt use this description
+  );
 
-      # the user have to implement capturing signals and exiting.
-      my $run = 1;
-      local $SIG{'INT'} = sub { $run = 0; };
+  # MooseX::Role::UserDaemon requires the consuming class to implement main()
+  sub main {
+    my ($self) = @_;
 
-      FOREVER_LOOP:
-      while ($run) {
-        sleep 1; # This is where you place your code
-      }
-      
-      # It is recomended that main() return '0 but true' on success.
-      # the return value of main is feed directly to exit()
-      return '0 but true';
+    # the user have to implement capturing signals and exiting.
+    my $run = 1;
+    local $SIG{'INT'} = sub { $run = 0; };
+
+    FOREVER_LOOP:
+    while ($run) {
+      sleep 1; # This is where you place your code
     }
+      
+    # It is recomended that main() return '0 but true' on success.
+    # the return value of main is feed directly to exit()
+    return '0 but true';
+  }
 
-In your script:
+# In your script:
 
-    use YourApp;
-    my $app = YourApp->new_with_options;
+  use YourApp;
+  my $app = YourApp->new_with_options;
 
-    exit $app->run unless caller 0;
+  exit $app->run unless caller 0;
 
-On the commanline:
+# On the commanline:
 
-	Start your app
-	$ yourapp.pl start
-		Starting...
+  Start your app
+  $ yourapp.pl start
+    Starting...
 
-	Check your status
-	$ yourapp.pl status
-		Running with PID: ...
+  Check your status
+  $ yourapp.pl status
+    Running with PID: ...
 
-	Stop your app
-	$ yourapp.pl stop
-		Stopping PID: ...
+  Stop your app
+  $ yourapp.pl stop
+    Stopping PID: ...
 
 =head1 DESCRIPTION
 
-	MooseX::Role::UserDaemon aims to simplify implementation of daemons and apps
-	ment to be run from a normal users home directory.
-	This module is not suited for implementing daemons running as root or other
-	system users.
+C<< MooseX::Role::UserDaemon >> aims to simplify implementation of
+daemons and apps ment to be run from a normal users home directory.
 
-  When using this module your script will by default:
-  1. Create a hidden folder in the users home directory with the same name as
-  the script itself. So YouApp.pl will create a directory ~/.yourapp.pl
-  
-  2. chdir to this directory.
-  
-  3. Daemonize by double forking.
+B<< This module is not suited for implementing daemons running as root
+or other system users. >>
 
-  4. Create a lockfile named lock and place a "flock" on the file. This lock 
-  will be in place until the app shuts down.
-  
-  5. Create a pidfile named pid.
+When using this role your script will by default:
 
-  6. run the main() subroutine.
+1. Create a hidden folder in the users home directory with the same
+name as the script itself. So YourApp.pl will create a directory
+~/.yourapp.pl
 
-  Five commands are implemented by default, start, stop, restart, reload and
-  status.
+2. chdir to this directory.
 
-=head2 Start (default)
-  Will launch the application according to the description above.
+3. Daemonize by double forking.
 
-=head2 Stop
-  Will read the pid from the pidfile and issue a TERM signal.
+4. Create a lockfile named lock and place a C<< flock >> on the file.
+This lock  will be in place until the app shuts down.
 
-=head2 Restart
-  Restart is the same as running stop then start again.
+5. Create a pidfile named pid.
 
-=head2 Reload
-  Will read the pid from the pidfile and issue a HUP signal.
+6. run the C<< main() >> subroutine.
 
-=head2 Status
-  Will read the pid from the pidfile.
+Five commands are implemented by default: status, start, stop, restart,
+reload.
 
-=back
+=head2 start (default)
 
-  MooseX::Role::UserDaemon was originaly developed for an application that also
-  used MooseX::Getopt and MooseX::SimpleConfig.
+Will launch the application according to the description above.
+
+=head2 stop
+
+Will read the pid from the pidfile and issue a INT signal.
+
+=head2 restart
+
+Restart is the same as running stop then start again.
+
+=head2 reload
+
+Will read the pid from the pidfile and issue a HUP signal.
+
+=head2 status
+
+Will read the pid from the pidfile.
 
 =head1 SUBROUTINES/METHODS
 
 =head2 run
 
-	Runs the command issued to the script, defaults to 'start' if no command is given.
-	By default the valid commands are:
-	status
-	start
-	stop
-	restart
-	reload
+C<< run() >> will determine which command was issued to the script,
+defaults to I<< start >> if no command is given. By default the valid
+commands are:
 
-  New commands can be added by the consuming class, it which case the attribute '_valid_commands' needs to be updated for 'run()' to allow the command to be executed.
-	'_valid_commands' is a RegexpRef and the default value is: qr/status|start|stop|reload|restart/
+=over 2
 
-  To override by defining your own _valid_commands in the consuming class.
+=item *
 
-  has '_valid_commands' => (
-    is      => 'ro',
-    isa     => 'RegexpRef',
-    default => sub {qr/status|start|stop|reload|restart|customcommand/xms},
-  );
+status
+
+=item *
+
+start
+
+=item *
+
+stop
+
+=item *
+
+restart
+
+=item *
+
+reload
+
+=back
+
+New commands can be added by the consuming class, it which case the
+attribute C<< _valid_commands >> needs to be updated for C<< run() >>
+to allow the command to be executed. C<< _valid_commands >> is a
+RegexpRef and the default value is:
+qr/status|start|stop|reload|restart/
+
+To override by defining your own C<< _valid_commands >> in the
+consuming class.
+
+has '+_valid_commands' => (   default => sub
+{qr/status|start|stop|restart|custom_command/xms}, );
 
 =head2 status
 
-	Checks if the app is running, print status to STDOUT.
+Checks if the app is running, print status to STDOUT.
 
 =head2 start
 
-	start() call 'main()' after checking that it is not running and after forking (unless foreground mode is enabled).
+C<< start() >> call C<< main() >> after checking that it is not running
+and after forking (unless foreground mode is enabled).
 
 =head2 stop
 
-	stop issues a 'INT' signal to the PID listed in the pidfile.
-	It is up to the author to trap this signal and end the application in an orderly fashion.
+C<< stop() >> issues a INT signal to the PID listed in the pidfile. It
+is up to the author to trap this signal and end the application in an
+orderly fashion.
 
 =head2 restart
 
-	restart simply call 'stop()', wait for the app to stop and call 'start()'.
+C<< restart() >> simply call C<< stop() >>, wait for the app to stop
+and call C<< start() >>.
 
 =head2 reload
 
-	Reload issues a "HUP" signal to the PID listed in the pidfile.
-	It is up to the author to trap this signal and do the appropriate thing, usualy to reload configuration files.
+C<< reload() >> issues a HUP signal to the PID listed in the pidfile.
+It is up to the author to trap this signal and do the appropriate
+thing, usualy to reload configuration files.
 
 =head1 AUTHOR
 
@@ -615,14 +642,14 @@ Tore Andersson
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc MooseX::Role::UserDaemon
+  perldoc MooseX::Role::UserDaemon
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2013 Tore Andersson
+Copyright (C) 2013-2014 Tore Andersson
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
 
 See http://dev.perl.org/licenses/ for more information.
 
