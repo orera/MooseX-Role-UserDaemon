@@ -270,7 +270,7 @@ use namespace::autoclean;
     defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
     exit if $pid2;    # Intermediate parent exit
 
-    # Return child returns false!
+    # Child returns false.
     return;
   }
 
@@ -498,6 +498,8 @@ MooseX::Getopt
 # In your script:
 
   use YourApp;
+
+  # use new_with_options when using Getopt/SimpleConfig
   my $app = YourApp->new_with_options;
 
   exit $app->run unless caller 0;

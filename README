@@ -2,11 +2,28 @@ MooseX::Role::UserDaemon Version 0.05
 
 DESCRIPTION
 
-A moose role ment to simplify writing of perl daemons and scripts
-running as a normal user. It implements:
-  1. A lockfile to ensure only one running instace at any given time.
-  2. A pidfile to we can find the running process id if we need to signal it.
-  3. Daemonize with double forking for running processes in the background
+MooseX::Role::UserDaemon aims to simplify implementation of
+daemons and apps ment to be run from a normal users home directory.
+
+This module is not suited for implementing daemons running as root
+or other system users.
+
+When using this role your script will by default:
+
+1. Create a hidden folder in the users home directory with the same
+name as the script itself. So YourApp.pl will create a directory
+~/.yourapp.pl
+
+2. chdir to this directory.
+
+3. Daemonize by double forking.
+
+4. Create a lockfile named lock and place a flock on the file.
+This lock  will be in place until the app shuts down.
+
+5. Create a pidfile named pid.
+
+6. run the main() subroutine.
 
 INSTALLATION
 

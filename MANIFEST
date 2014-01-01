@@ -9,6 +9,8 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/MooseX/Role/UserDaemon.pm
+.podtidy-opts
+.perltidyrc
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
@@ -18,6 +20,7 @@ t/00-load.t
 t/01-kwalitee.t
 t/02-basic_usage.t
 t/03-file_errors.t
+t/04-override_attributes.t
 t/boilerplate.t
 t/manifest.t
 t/pod-coverage.t
