@@ -1,4 +1,6 @@
-package MooseX::Role::UserDaemon 0.05;
+package MooseX::Role::UserDaemon;
+
+# ABSTRACT: Simplify writing of user space daemons
 
 use 5.014;
 use Moose::Role;
@@ -10,6 +12,10 @@ use File::HomeDir qw();
 use File::Path qw(make_path);
 use POSIX qw();
 use namespace::autoclean;
+
+BEGIN {
+  # VERSION
+}
 
 {
   requires 'main';
@@ -405,14 +411,6 @@ __END__
 
 =encoding utf8
 
-=head1 NAME
-
-MooseX::Role::UserDaemon - Simplify writing of user space daemons
-
-=head1 VERSION
-
-Version 0.05
-
 =head1 SYNOPSIS
 
 # In your module:
@@ -566,37 +564,11 @@ Will read the pid from the pidfile and issue a HUP signal.
 
 Will read the pid from the pidfile.
 
-=head1 SUBROUTINES/METHODS
-
-=head2 run
+=method run
 
 C<< run() >> will determine which command was issued to the script,
 defaults to I<< start >> if no command is given. By default the valid
-commands are:
-
-=over 2
-
-=item *
-
-status
-
-=item *
-
-start
-
-=item *
-
-stop
-
-=item *
-
-restart
-
-=item *
-
-reload
-
-=back
+commands are: status, start, stop, restart, reload
 
 New commands can be added by the consuming class, it which case the
 attribute C<< _valid_commands >> needs to be updated for C<< run() >>
@@ -610,49 +582,34 @@ consuming class.
 has '+_valid_commands' => (   default => sub
 {qr/status|start|stop|restart|custom_command/xms}, );
 
-=head2 status
+=method status
 
 Checks if the app is running, print status to STDOUT.
 
-=head2 start
+=method start
 
 C<< start() >> call C<< main() >> after checking that it is not running
 and after forking (unless foreground mode is enabled).
 
-=head2 stop
+=method stop
 
 C<< stop() >> issues a INT signal to the PID listed in the pidfile. It
 is up to the author to trap this signal and end the application in an
 orderly fashion.
 
-=head2 restart
+=method restart
 
 C<< restart() >> simply call C<< stop() >>, wait for the app to stop
 and call C<< start() >>.
 
-=head2 reload
+=method reload
 
 C<< reload() >> issues a HUP signal to the PID listed in the pidfile.
 It is up to the author to trap this signal and do the appropriate
 thing, usualy to reload configuration files.
 
-=head1 AUTHOR
+=for Pod::Coverage LOCK_EX
 
-Tore Andersson
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-  perldoc MooseX::Role::UserDaemon
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright (C) 2013-2014 Tore Andersson
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
-See http://dev.perl.org/licenses/ for more information.
+=for Pod::Coverage LOCK_NB
 
 =cut
