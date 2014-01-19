@@ -458,10 +458,11 @@ __END__
   $ yourapp.pl stop
     Stopping PID: ...
 
-# Or preferably in combination with MooseX::SimpleConfig and/or
-MooseX::Getopt
+# Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
+# In your module:
 
-# In your module:   package YourApp;   use Moose;
+  package YourApp;
+  use Moose;
 
   # Enable use of configfile and commandline parameters as well
   with qw(MooseX::Role::UserDaemon MooseX::SimpleConfig MooseX::Getopt);
@@ -530,7 +531,7 @@ When using this role your script will by default:
 name as the script itself. So YourApp.pl will create a directory
 ~/.yourapp.pl
 
-2. chdir to this directory.
+2. C<< chdir >> to this directory.
 
 3. Daemonize by double forking.
 
@@ -562,7 +563,7 @@ Will read the pid from the pidfile and issue a HUP signal.
 
 =head2 status
 
-Will read the pid from the pidfile.
+Will read the pid from the pidfile and print to STDOUT.
 
 =method run
 
@@ -579,8 +580,11 @@ qr/status|start|stop|reload|restart/
 To override by defining your own C<< _valid_commands >> in the
 consuming class.
 
-has '+_valid_commands' => (   default => sub
-{qr/status|start|stop|restart|custom_command/xms}, );
+has '+_valid_commands' => (
+  default => sub {
+    return qr/status|start|stop|restart|custom_command/xms
+  },
+);
 
 =method status
 
