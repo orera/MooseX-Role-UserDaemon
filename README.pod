@@ -12,7 +12,7 @@ version 0.05
 
 =head1 SYNOPSIS
 
-# In your module:
+In your module:
 
   package YourApp;
   use Moose;
@@ -36,14 +36,14 @@ version 0.05
     return '0 but true';
   }
 
-# In your script:
+In your script:
 
   use YourApp;
   my $app = YourApp->new;
 
   exit $app->run unless caller 0;
 
-# On the commanline:
+On the commanline:
 
   Start your app
   $ yourapp.pl start
@@ -57,8 +57,8 @@ version 0.05
   $ yourapp.pl stop
     Stopping PID: ...
 
-# Or preferably in combination with MooseX::SimpleConfig and/or
-MooseX::Getopt # In your module:
+Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
+In your module:
 
   package YourApp;
   use Moose;
@@ -93,7 +93,7 @@ MooseX::Getopt # In your module:
     return '0 but true';
   }
 
-# In your script:
+In your script:
 
   use YourApp;
 
@@ -102,7 +102,7 @@ MooseX::Getopt # In your module:
 
   exit $app->run unless caller 0;
 
-# On the commanline:
+On the commanline:
 
   Start your app
   $ yourapp.pl start
@@ -181,8 +181,11 @@ qr/status|start|stop|reload|restart/
 To override by defining your own C<< _valid_commands >> in the
 consuming class.
 
-has '+_valid_commands' => (   default => sub {     return
-qr/status|start|stop|restart|custom_command/xms   }, );
+has '+_valid_commands' => (
+  default => sub {
+    return qr/status|start|stop|restart|custom_command/xms
+  },
+);
 
 =head2 status
 

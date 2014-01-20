@@ -413,7 +413,7 @@ __END__
 
 =head1 SYNOPSIS
 
-# In your module:
+In your module:
 
   package YourApp;
   use Moose;
@@ -437,14 +437,14 @@ __END__
     return '0 but true';
   }
 
-# In your script:
+In your script:
 
   use YourApp;
   my $app = YourApp->new;
 
   exit $app->run unless caller 0;
 
-# On the commanline:
+On the commanline:
 
   Start your app
   $ yourapp.pl start
@@ -458,8 +458,8 @@ __END__
   $ yourapp.pl stop
     Stopping PID: ...
 
-# Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
-# In your module:
+Or preferably in combination with MooseX::SimpleConfig and/or MooseX::Getopt
+In your module:
 
   package YourApp;
   use Moose;
@@ -494,7 +494,7 @@ __END__
     return '0 but true';
   }
 
-# In your script:
+In your script:
 
   use YourApp;
 
@@ -503,7 +503,7 @@ __END__
 
   exit $app->run unless caller 0;
 
-# On the commanline:
+On the commanline:
 
   Start your app
   $ yourapp.pl start
