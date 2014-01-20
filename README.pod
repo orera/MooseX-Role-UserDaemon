@@ -178,8 +178,8 @@ to allow the command to be executed. C<< _valid_commands >> is a
 RegexpRef and the default value is:
 qr/status|start|stop|reload|restart/
 
-To override by defining your own C<< _valid_commands >> in the
-consuming class.
+You can set your own C<< _valid_commands >> in the consuming class, to allow 
+for custom commands like this:
 
 has '+_valid_commands' => (
   default => sub {
