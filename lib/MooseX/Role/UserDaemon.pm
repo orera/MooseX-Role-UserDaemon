@@ -9,6 +9,7 @@ use English qw(-no_match_vars);
 use Fcntl qw(:flock);
 use File::Basename qw();
 use File::HomeDir qw();
+use File::Spec qw();
 use File::Path qw(make_path);
 use POSIX qw();
 use namespace::autoclean;
@@ -77,17 +78,17 @@ BEGIN {
 
   sub _build_basedir {
     my ($self) = @_;
-    return join q{/.}, File::HomeDir->my_home, lc $self->_name;
+    return File::Spec->catdir( File::HomeDir->my_home, lc('.' . $self->_name) );
   }
 
   sub _build_lockfile {
     my ($self) = @_;
-    return join q{/}, $self->basedir, 'lock';
+    return File::Spec->catdir( $self->basedir, 'lock' );
   }
 
   sub _build_pidfile {
     my ($self) = @_;
-    return join q{/}, $self->basedir, 'pid';
+    return File::Spec->catdir( $self->basedir, 'pid' );
   }
 
   # Write PID file if supplied
@@ -264,9 +265,9 @@ BEGIN {
     return '0 but true' if $pid1;    # Original parent exit
 
     # Redirect STD* to /dev/null
-    open STDIN,  '<',  '/dev/null';
-    open STDOUT, '>>', '/dev/null';
-    open STDERR, '>>', '/dev/null';
+    open STDIN,  '<',  File::Spec->devnull;
+    open STDOUT, '>>', File::Spec->devnull;
+    open STDERR, '>>', File::Spec->devnull;
 
     # Become session leader
     POSIX::setsid
@@ -573,6 +574,46 @@ Will read the pid from the pidfile and issue a HUP signal.
 =head2 status
 
 Will read the pid from the pidfile and print to STDOUT.
+
+=head1 ATTRIBUTES
+
+=head2 _name
+
+String. Defaults to script name, is used for setting a application folder name.
+
+=head2 _valid_commands
+
+Regexp. Default is C<< qr/status|start|stop|reload|restart/xms >>. Whitelist 
+methods which can be called from the command line.
+
+=head2 timeout
+
+Integrer. Default is 5. How much time in seconds it's expected to take after
+shutting down the app by sending a C<< INT >> singal. This is used by
+C << stop >> to avoid waiting forever for the app to shut down.
+
+=head2 foreground
+
+Integrer. Default is 0. If set to 1 the app will not daemonize/fork or redirect
+STD* to /dev/null.
+
+=head2 basedir
+
+String. Default to an application folder in the users home directory. The app
+will C<< chdir >> to this location during startup. This is where we will place 
+lockfile, pidfile and other application files.
+
+=head2 lockfile
+
+String. Default to /basedir/lockfile
+
+=head2 _lockfile_fh
+
+Filehandle. Used for holding the lockfile filehandle while the app is running.
+
+=head2 pidfile
+
+String. Default to /basedir/pid
 
 =head1 METHODS
 
