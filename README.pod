@@ -181,11 +181,11 @@ qr/status|start|stop|reload|restart/
 You can set your own C<< _valid_commands >> in the consuming class, to allow 
 for custom commands like this:
 
-has '+_valid_commands' => (
-  default => sub {
-    return qr/status|start|stop|restart|custom_command/xms
-  },
-);
+  has '+_valid_commands' => (
+    default => sub {
+      return qr/status|start|stop|restart|custom_command/xms
+    },
+  );
 
 =head2 status
 
