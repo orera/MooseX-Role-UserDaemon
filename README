@@ -64,11 +64,13 @@ SYNOPSIS
     
       # '+configfile' Only required when using MooseX::SimpleConfig
       has '+configfile' => (
-        is            => 'ro',
-        isa           => 'Str',
-        default       =>
-          sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
-        documentation => 'Use custom configfile.', # Getopt use this description
+        is      => 'ro',
+        isa     => 'Str',
+        default => sub {
+          File::Spec->catdir( File::HomeDir->my_home, '.yourapp',
+            'yourapp.conf' );
+        },
+        documentation => 'Use custom configfile.',   # Getopt use this description
       );
     
       # MooseX::Role::UserDaemon requires the consuming class to implement main()
@@ -114,8 +116,8 @@ SYNOPSIS
 
 DESCRIPTION
 
-    MooseX::Role::UserDaemon aims to simplify implementation of daemons and
-    apps ment to be run from a normal users home directory.
+    This module aims to simplify implementation of daemons and apps ment to
+    be run for normal users. Not system wide services or servers.
 
     This module is not suited for implementing daemons running as root or
     other system users.
@@ -174,13 +176,13 @@ ATTRIBUTES
 
  timeout
 
-    Integrer. Default is 5. How much time in seconds it's expected to take
-    after shutting down the app by sending a INT singal. This is used by C
-    << stop >> to avoid waiting forever for the app to shut down.
+    Integer. Default is 5. How much time in seconds it's expected to take
+    after shutting down the app by sending a INT singal. This is used by
+    stop to avoid waiting forever for the app to shut down.
 
  foreground
 
-    Integrer. Default is 0. If set to 1 the app will not daemonize/fork or
+    Integer. Default is 0. If set to 1 the app will not daemonize/fork or
     redirect STD* to /dev/null.
 
  basedir
