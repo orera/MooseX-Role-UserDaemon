@@ -83,7 +83,7 @@ SYNOPSIS
     
         FOREVER_LOOP:
         while ($run) {
-          sleep 1; # This is where you place your code
+          sleep 1;
         }
           
         # It is recomended that main() return '0 but true' on success.

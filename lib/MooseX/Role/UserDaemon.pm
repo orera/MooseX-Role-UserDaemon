@@ -10,7 +10,7 @@ use Fcntl qw(:flock);
 use File::Basename qw();
 use File::HomeDir qw();
 use File::Spec qw();
-use File::Path qw(make_path);
+use File::Path qw();
 use POSIX qw();
 use namespace::autoclean;
 
@@ -30,7 +30,7 @@ BEGIN {
   has '_valid_commands' => (
     is      => 'ro',
     isa     => 'RegexpRef',
-    default => sub {qr/status|start|stop|reload|restart/xms},
+    default => sub {qr/(status|start|stop|reload|restart)/xms},
   );
 
   has 'timeout' => (
@@ -78,18 +78,17 @@ BEGIN {
 
   sub _build_basedir {
     my ($self) = @_;
-    return File::Spec->catdir( File::HomeDir->my_home,
-      lc( '.' . $self->_name ) );
+    File::Spec->catdir( File::HomeDir->my_home, lc( '.' . $self->_name ) );
   }
 
   sub _build_lockfile {
     my ($self) = @_;
-    return File::Spec->catdir( $self->basedir, 'lock' );
+    File::Spec->catdir( $self->basedir, 'lock' );
   }
 
   sub _build_pidfile {
     my ($self) = @_;
-    return File::Spec->catdir( $self->basedir, 'pid' );
+    File::Spec->catdir( $self->basedir, 'pid' );
   }
 
   # Write PID file if supplied
@@ -144,7 +143,7 @@ BEGIN {
 
     # create the entire path, and remove the innermost directory
     if ( !-e $self->lockfile ) {
-      make_path( $self->lockfile );
+      File::Path::make_path( $self->lockfile );
       rmdir $self->lockfile;
     }
 
@@ -191,7 +190,7 @@ BEGIN {
 
     # create the entire path, and remove the innermost directory
     if ( !-e $self->pidfile ) {
-      make_path( $self->pidfile );
+      File::Path::make_path( $self->pidfile );
       rmdir $self->pidfile;
     }
 
@@ -387,12 +386,14 @@ BEGIN {
 
     # Default to start.
     $command ||= 'start';
+    
+    $command = $command =~ $self->_valid_commands;
 
     # Validate that mode is valid/approved
-    if ( $command !~ $self->_valid_commands ) {
-      say "Invalid command: $command";
-      return 9;
-    }
+    #if ( $command !~ $self->_valid_commands ) {
+    #  say "Invalid command: $command";
+    #  return 9;
+    #}
 
     # Create base dir if none exists.
     return 1 if !-e $self->basedir && !make_path( $self->basedir );
@@ -499,7 +500,7 @@ In your module:
 
     FOREVER_LOOP:
     while ($run) {
-      sleep 1; # This is where you place your code
+      sleep 1;
     }
       
     # It is recomended that main() return '0 but true' on success.
@@ -541,8 +542,7 @@ or other system users. >>
 When using this role your script will by default:
 
 1. Create a hidden folder in the users home directory with the same
-name as the script itself. So YourApp.pl will create a directory
-~/.yourapp.pl
+name as the script itself. So YourApp.pl will create a directory ~/.yourapp.pl
 
 2. C<< chdir >> to this directory.
 
