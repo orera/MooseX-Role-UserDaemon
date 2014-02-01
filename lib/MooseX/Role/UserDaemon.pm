@@ -78,17 +78,17 @@ BEGIN {
 
   sub _build_basedir {
     my ($self) = @_;
-    return File::Spec->catdir( File::HomeDir->my_home, lc('.' . $self->_name) );
+    File::Spec->catdir( File::HomeDir->my_home, lc( '.' . $self->_name ) );
   }
 
   sub _build_lockfile {
     my ($self) = @_;
-    return File::Spec->catdir( $self->basedir, 'lock' );
+    File::Spec->catdir( $self->basedir, 'lock' );
   }
 
   sub _build_pidfile {
     my ($self) = @_;
-    return File::Spec->catdir( $self->basedir, 'pid' );
+    File::Spec->catdir( $self->basedir, 'pid' );
   }
 
   # Write PID file if supplied
@@ -470,11 +470,13 @@ In your module:
 
   # '+configfile' Only required when using MooseX::SimpleConfig
   has '+configfile' => (
-    is            => 'ro',
-    isa           => 'Str',
-    default       =>
-      sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
-    documentation => 'Use custom configfile.', # Getopt use this description
+    is      => 'ro',
+    isa     => 'Str',
+    default => sub {
+      File::Spec->catdir( File::HomeDir->my_home, '.yourapp',
+        'yourapp.conf' );
+    },
+    documentation => 'Use custom configfile.',   # Getopt use this description
   );
 
   # MooseX::Role::UserDaemon requires the consuming class to implement main()
@@ -487,7 +489,7 @@ In your module:
 
     FOREVER_LOOP:
     while ($run) {
-      sleep 1; # This is where you place your code
+      sleep 1;
     }
       
     # It is recomended that main() return '0 but true' on success.
@@ -520,8 +522,8 @@ On the commanline:
 
 =head1 DESCRIPTION
 
-C<< MooseX::Role::UserDaemon >> aims to simplify implementation of
-daemons and apps ment to be run from a normal users home directory.
+This module aims to simplify implementation of daemons and apps ment to be run
+for normal users. Not system wide services or servers.
 
 B<< This module is not suited for implementing daemons running as root
 or other system users. >>
@@ -529,8 +531,7 @@ or other system users. >>
 When using this role your script will by default:
 
 1. Create a hidden folder in the users home directory with the same
-name as the script itself. So YourApp.pl will create a directory
-~/.yourapp.pl
+name as the script itself. So YourApp.pl will create a directory ~/.yourapp.pl
 
 2. C<< chdir >> to this directory.
 
@@ -552,7 +553,7 @@ Will launch the application according to the description above.
 
 =head2 stop
 
-Will read the pid from the pidfile and issue a INT signal.
+Will read the pid from the pidfile and issue a C<< INT >> signal.
 
 =head2 restart
 
@@ -560,7 +561,7 @@ Restart is the same as running stop then start again.
 
 =head2 reload
 
-Will read the pid from the pidfile and issue a HUP signal.
+Will read the pid from the pidfile and issue a C<< HUP >> signal.
 
 =head2 status
 
@@ -577,13 +578,13 @@ methods which can be called from the command line.
 
 =attr timeout
 
-Integrer. Default is 5. How much time in seconds it's expected to take after
+Integer. Default is 5. How much time in seconds it's expected to take after
 shutting down the app by sending a C<< INT >> singal. This is used by
-C << stop >> to avoid waiting forever for the app to shut down.
+C<< stop >> to avoid waiting forever for the app to shut down.
 
 =attr foreground
 
-Integrer. Default is 0. If set to 1 the app will not daemonize/fork or redirect
+Integer. Default is 0. If set to 1 the app will not daemonize/fork or redirect
 STD* to /dev/null.
 
 =attr basedir
@@ -614,7 +615,7 @@ New commands can be added by the consuming class, it which case the
 attribute C<< _valid_commands >> needs to be updated for C<< run() >>
 to allow the command to be executed. C<< _valid_commands >> is a
 RegexpRef and the default value is:
-qr/status|start|stop|reload|restart/
+C<< qr/status|start|stop|reload|restart/ >>
 
 You can set your own C<< _valid_commands >> in the consuming class, to allow 
 for custom commands like this:
@@ -636,7 +637,7 @@ and after forking (unless foreground mode is enabled).
 
 =method stop
 
-C<< stop() >> issues a INT signal to the PID listed in the pidfile. It
+C<< stop() >> issues a C<< INT >> signal to the PID listed in the pidfile. It
 is up to the author to trap this signal and end the application in an
 orderly fashion.
 
@@ -647,7 +648,7 @@ and call C<< start() >>.
 
 =method reload
 
-C<< reload() >> issues a HUP signal to the PID listed in the pidfile.
+C<< reload() >> issues a C<< HUP >> signal to the PID listed in the pidfile.
 It is up to the author to trap this signal and do the appropriate
 thing, usualy to reload configuration files.
 

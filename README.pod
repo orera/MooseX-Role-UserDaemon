@@ -68,11 +68,13 @@ In your module:
 
   # '+configfile' Only required when using MooseX::SimpleConfig
   has '+configfile' => (
-    is            => 'ro',
-    isa           => 'Str',
-    default       =>
-      sub { join q{/}, $ENV{'HOME'}, '.yourapp/yourapp.conf' },
-    documentation => 'Use custom configfile.', # Getopt use this description
+    is      => 'ro',
+    isa     => 'Str',
+    default => sub {
+      File::Spec->catdir( File::HomeDir->my_home, '.yourapp',
+        'yourapp.conf' );
+    },
+    documentation => 'Use custom configfile.',   # Getopt use this description
   );
 
   # MooseX::Role::UserDaemon requires the consuming class to implement main()
@@ -118,8 +120,8 @@ On the commanline:
 
 =head1 DESCRIPTION
 
-C<< MooseX::Role::UserDaemon >> aims to simplify implementation of
-daemons and apps ment to be run from a normal users home directory.
+This module aims to simplify implementation of daemons and apps ment to be run
+for normal users. Not system wide services or servers.
 
 B<< This module is not suited for implementing daemons running as root
 or other system users. >>
@@ -150,7 +152,7 @@ Will launch the application according to the description above.
 
 =head2 stop
 
-Will read the pid from the pidfile and issue a INT signal.
+Will read the pid from the pidfile and issue a C<< INT >> signal.
 
 =head2 restart
 
@@ -158,7 +160,7 @@ Restart is the same as running stop then start again.
 
 =head2 reload
 
-Will read the pid from the pidfile and issue a HUP signal.
+Will read the pid from the pidfile and issue a C<< HUP >> signal.
 
 =head2 status
 
@@ -177,13 +179,13 @@ methods which can be called from the command line.
 
 =head2 timeout
 
-Integrer. Default is 5. How much time in seconds it's expected to take after
+Integer. Default is 5. How much time in seconds it's expected to take after
 shutting down the app by sending a C<< INT >> singal. This is used by
-C << stop >> to avoid waiting forever for the app to shut down.
+C<< stop >> to avoid waiting forever for the app to shut down.
 
 =head2 foreground
 
-Integrer. Default is 0. If set to 1 the app will not daemonize/fork or redirect
+Integer. Default is 0. If set to 1 the app will not daemonize/fork or redirect
 STD* to /dev/null.
 
 =head2 basedir
@@ -216,7 +218,7 @@ New commands can be added by the consuming class, it which case the
 attribute C<< _valid_commands >> needs to be updated for C<< run() >>
 to allow the command to be executed. C<< _valid_commands >> is a
 RegexpRef and the default value is:
-qr/status|start|stop|reload|restart/
+C<< qr/status|start|stop|reload|restart/ >>
 
 You can set your own C<< _valid_commands >> in the consuming class, to allow 
 for custom commands like this:
@@ -238,7 +240,7 @@ and after forking (unless foreground mode is enabled).
 
 =head2 stop
 
-C<< stop() >> issues a INT signal to the PID listed in the pidfile. It
+C<< stop() >> issues a C<< INT >> signal to the PID listed in the pidfile. It
 is up to the author to trap this signal and end the application in an
 orderly fashion.
 
@@ -249,7 +251,7 @@ and call C<< start() >>.
 
 =head2 reload
 
-C<< reload() >> issues a HUP signal to the PID listed in the pidfile.
+C<< reload() >> issues a C<< HUP >> signal to the PID listed in the pidfile.
 It is up to the author to trap this signal and do the appropriate
 thing, usualy to reload configuration files.
 
