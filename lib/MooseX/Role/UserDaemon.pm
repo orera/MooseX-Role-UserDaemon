@@ -30,7 +30,7 @@ BEGIN {
   has '_valid_commands' => (
     is      => 'ro',
     isa     => 'RegexpRef',
-    default => sub {qr/(status|start|stop|reload|restart)/xms},
+    default => sub {qr/status|start|stop|reload|restart/xms},
   );
 
   has 'timeout' => (
@@ -387,13 +387,11 @@ BEGIN {
     # Default to start.
     $command ||= 'start';
     
-    $command = $command =~ $self->_valid_commands;
-
     # Validate that mode is valid/approved
-    #if ( $command !~ $self->_valid_commands ) {
-    #  say "Invalid command: $command";
-    #  return 9;
-    #}
+    if ( $command !~ $self->_valid_commands ) {
+      say "Invalid command: $command";
+      return 9;
+    }
 
     # Create base dir if none exists.
     return 1 if !-e $self->basedir && !make_path( $self->basedir );
