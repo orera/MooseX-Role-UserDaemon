@@ -7,11 +7,11 @@ use Moose::Role;
 use autodie;
 use English qw(-no_match_vars);
 use Fcntl qw(:flock);
-use File::Basename qw();
-use File::HomeDir qw();
-use File::Spec qw();
-use File::Path qw();
-use POSIX qw();
+use File::Basename ();
+use File::HomeDir ();
+use File::Spec ();
+use File::Path ();
+use POSIX ();
 use namespace::autoclean;
 
 BEGIN {
@@ -46,7 +46,7 @@ BEGIN {
     isa     => 'Int',
     default => 0,
     documentation =>
-      '--foreground=1 will run the app in the foreground, instead of daemonizing it.',
+      '--foreground=1 will run the app in the foreground instead of daemonizing it.',
   );
 
   has 'basedir' => (
@@ -386,7 +386,7 @@ BEGIN {
 
     # Default to start.
     $command ||= 'start';
-    
+
     # Validate that mode is valid/approved
     if ( $command !~ $self->_valid_commands ) {
       say "Invalid command: $command";
@@ -402,9 +402,9 @@ BEGIN {
     # Run!
     return $self->$command;
   }
-
-  no Moose::Role;
 }
+
+no Moose::Role;
 1;
 
 __END__
