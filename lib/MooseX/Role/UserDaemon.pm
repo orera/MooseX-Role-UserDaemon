@@ -95,12 +95,15 @@ BEGIN {
   around 'main' => sub {
     my ( $orig, $self ) = @_;
 
+    # Abort if no pidfile has been specified
     return if !$self->pidfile;
 
+    # Failed to write pid
     return 5 if !$self->_write_pid;
 
     $self->$orig;
 
+    # Failed to remove pidfile after execution
     return 6 if !$self->_delete_pid;
   };
 
@@ -108,12 +111,15 @@ BEGIN {
   around 'main' => sub {
     my ( $orig, $self ) = @_;
 
+    # Abort if no lockfile has been specified
     return if !$self->lockfile;
 
+    # Failed to establish a lock
     return 4 if !$self->_lock;
 
     $self->$orig;
 
+    # Failed to remove lock
     return 7 if !$self->_unlock;
   };
 
@@ -433,7 +439,9 @@ In your module:
   sub main {
     my ($self) = @_;
 
-    # the user have to implement capturing signals and exiting.
+    # It is the responsibility of the consuming class to capture INT signals
+    # to allow for graceful shutdown of the app.
+    # In addition the HUP signal should be caught and used for config reload.
     my $run = 1;
     local $SIG{'INT'} = sub { $run = 0; };
 

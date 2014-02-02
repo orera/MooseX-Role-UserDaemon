@@ -18,7 +18,9 @@ SYNOPSIS
       sub main {
         my ($self) = @_;
     
-        # the user have to implement capturing signals and exiting.
+        # It is the responsibility of the consuming class to capture INT signals
+        # to allow for graceful shutdown of the app.
+        # In addition the HUP signal should be caught and used for config reload.
         my $run = 1;
         local $SIG{'INT'} = sub { $run = 0; };
     
