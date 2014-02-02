@@ -400,7 +400,7 @@ BEGIN {
     }
 
     # Create base dir if none exists.
-    return 1 if !-e $self->basedir && !make_path( $self->basedir );
+    return 1 if !-e $self->basedir && !File::Path::make_path( $self->basedir );
 
     # Change to running dir, fail if base dir is not a directory
     return 2 if !-d $self->basedir || !chdir $self->basedir;
