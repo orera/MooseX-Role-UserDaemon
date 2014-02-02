@@ -7,11 +7,11 @@ use Moose::Role;
 use autodie;
 use English qw(-no_match_vars);
 use Fcntl qw(:flock);
-use File::Basename qw();
-use File::HomeDir qw();
-use File::Spec qw();
-use File::Path qw(make_path);
-use POSIX qw();
+use File::Basename ();
+use File::HomeDir ();
+use File::Spec ();
+use File::Path ();
+use POSIX ();
 use namespace::autoclean;
 
 BEGIN {
@@ -46,7 +46,7 @@ BEGIN {
     isa     => 'Int',
     default => 0,
     documentation =>
-      '--foreground=1 will run the app in the foreground, instead of daemonizing it.',
+      '--foreground=1 will run the app in the foreground instead of daemonizing it.',
   );
 
   has 'basedir' => (
@@ -143,7 +143,7 @@ BEGIN {
 
     # create the entire path, and remove the innermost directory
     if ( !-e $self->lockfile ) {
-      make_path( $self->lockfile );
+      File::Path::make_path( $self->lockfile );
       rmdir $self->lockfile;
     }
 
@@ -190,7 +190,7 @@ BEGIN {
 
     # create the entire path, and remove the innermost directory
     if ( !-e $self->pidfile ) {
-      make_path( $self->pidfile );
+      File::Path::make_path( $self->pidfile );
       rmdir $self->pidfile;
     }
 
@@ -402,12 +402,12 @@ BEGIN {
     # Run!
     return $self->$command;
   }
-
-  no Moose::Role;
 }
+
+no Moose::Role;
 1;
 __END__
-
+    
 =pod
 
 =encoding utf8

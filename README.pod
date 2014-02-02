@@ -87,7 +87,7 @@ In your module:
 
     FOREVER_LOOP:
     while ($run) {
-      sleep 1; # This is where you place your code
+      sleep 1;
     }
       
     # It is recomended that main() return '0 but true' on success.
@@ -129,8 +129,7 @@ or other system users. >>
 When using this role your script will by default:
 
 1. Create a hidden folder in the users home directory with the same
-name as the script itself. So YourApp.pl will create a directory
-~/.yourapp.pl
+name as the script itself. So YourApp.pl will create a directory ~/.yourapp.pl
 
 2. C<< chdir >> to this directory.
 
