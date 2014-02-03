@@ -26,13 +26,15 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     while ($run) {
       sleep 1;
     }
-    exit;
+    return '0 but true';
   }
+
+  1;
 }
 
 {
-  my $app = App->new;
-  isa_ok( $app, 'App' );
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
   # Check for valid methods
   my @subs = qw(
@@ -42,11 +44,10 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     _write_pid  _read_pid _delete_pid
     _daemonize  _lockfile_is_valid
   );
+
+  my $app = App->new;
+  isa_ok( $app, 'App' );
   can_ok( $app, @subs );
-
-  local $ENV{'HOME'} = File::Temp::tempdir;
-
-  # Test _private methods
 
   # Lockfile test
   ok( !-e $app->lockfile, 'lockfile does not exists' );
@@ -66,42 +67,48 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   ok( !-e $app->pidfile, 'pidfile does not exist' );
 
   # Test public methods
-  my @modes = qw(status start status restart stop status restart stop stop);
+  my @modes
+    = qw(status start status restart stop status restart stop stop run status stop);
 
   my %mode_prints = (
+    run   => [ qr{^Starting\.\.\.}, ],
     start => [ qr{^Starting\.\.\.}, ],
     stop  => [
       qr{^Stopping PID:\s\d+},
       qr{^Stopping PID:\s\d+},
       qr{Process not running, nothing to stop\.},
+      qr{^Stopping PID:\s\d+},
     ],
-    status =>
-      [ qr{^Not running.}, qr{^Running with PID:\s\d+}, qr{^Not running.}, ],
+    status => [
+      qr{^Not running.},
+      qr{^Running with PID:\s\d+},
+      qr{^Not running.},
+      qr{^Running with PID:\s\d+},
+    ],
     restart => [
       qr{^Stopping\sPID:\s\d+\nStarting\.\.\.},
       qr{Process not running, nothing to stop.\nStarting\.\.\.},
     ],
   );
 
-  # variable to be used to capture data sent to STDOUT by public methods.
-  my $stdout;
-
   foreach my $mode (@modes) {
     sleep 1;    # Ugly but necessary, forking and locking take time.
+
+    # variable to be used to capture data sent to STDOUT by public methods.
+    my $stdout;
+    my $stdout_re = shift @{ $mode_prints{$mode} };
 
     # Redirect STDOUT to variable.
     open my $stdout_fh, '>', \$stdout;
     select($stdout_fh);
 
-    my $regexp = shift @{ $mode_prints{$mode} };
-
     # Return values
     my $mode_rc = $app->$mode;
+    ok( $mode_rc, "$mode() return value is true" );
     cmp_ok( $mode_rc, '==', '0', "$mode() return value is 0" );
-    ok( $mode_rc, "$mode() return value is also true" );
 
     # Standard out
-    like( $stdout, $regexp, "$mode() STDOUT matched $regexp" );
+    like( $stdout, $stdout_re, "$mode() STDOUT matched $stdout_re" );
 
     close $stdout_fh;
   }
