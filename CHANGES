@@ -1,10 +1,22 @@
 ==================================================
-Changes from 2013-02-02 00:00:00 +0000 to present.
+Changes from 2013-02-03 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-02-02 15:50:25 +0000
+version 0.05 at 2014-02-03 22:22:29 +0000
 -----------------------------------------
+
+  Change: 7c08bb879087f7265377825bfeccb344210d3318
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-02-02 17:22:48 +0000
+
+    Fixed make_path to File::Path::make_path 
+
+  Change: 000d1fa1fdead2ae8100c53ae86ba396c987ac88
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-02-02 16:52:05 +0000
+
+    added/changed a few comments 
 
   Change: 223b7c1360b280011b87be283941726b81728ab6
   Author: Tore Andersson <tore.andersson@gmail.com>
