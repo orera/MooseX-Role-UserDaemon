@@ -1,10 +1,29 @@
 ==================================================
-Changes from 2013-02-03 00:00:00 +0000 to present.
+Changes from 2013-02-13 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-02-03 22:24:13 +0000
+version 0.05 at 2014-02-13 19:54:03 +0000
 -----------------------------------------
+
+  Change: 908cee5900ebda023a361947b7e717a001dc4919
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-02-13 00:11:32 +0000
+
+    Added protection for the sleep call in stop(), added _init_fh() to
+    remove duplicate code, and some other minor changes 
+
+  Change: c52e3cd91bdf4689e98d9789d4fca21ebee9384a
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-02-03 23:44:09 +0000
+
+    fixed long qw() string 
+
+  Change: ec32345e3e5f3fd197c8237f1df07342a7b7d7fa
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-02-03 23:26:10 +0000
+
+    Added unit test for run() 
 
   Change: 7c08bb879087f7265377825bfeccb344210d3318
   Author: Tore Andersson <tore.andersson@gmail.com>

@@ -8,10 +8,10 @@ use autodie;
 use English qw(-no_match_vars);
 use Fcntl qw(:flock);
 use File::Basename ();
-use File::HomeDir ();
-use File::Spec ();
-use File::Path ();
-use POSIX ();
+use File::HomeDir  ();
+use File::Spec     ();
+use File::Path     ();
+use POSIX          ();
 use namespace::autoclean;
 
 BEGIN {
@@ -78,17 +78,18 @@ BEGIN {
 
   sub _build_basedir {
     my ($self) = @_;
-    File::Spec->catdir( File::HomeDir->my_home, lc( '.' . $self->_name ) );
+    return File::Spec->catdir( File::HomeDir->my_home,
+      lc( q{.} . $self->_name ) );
   }
 
   sub _build_lockfile {
     my ($self) = @_;
-    File::Spec->catdir( $self->basedir, 'lock' );
+    return File::Spec->catdir( $self->basedir, 'lock' );
   }
 
   sub _build_pidfile {
     my ($self) = @_;
-    File::Spec->catdir( $self->basedir, 'pid' );
+    return File::Spec->catdir( $self->basedir, 'pid' );
   }
 
   # Write PID file if supplied
@@ -123,6 +124,44 @@ BEGIN {
     return 7 if !$self->_unlock;
   };
 
+  # Add a secondary blocking lockfile to protect some of the control commands.
+  # This is necessary to protect the timeout function in the stop() routine
+  around [qw(start stop reload)] => sub {
+    my ( $orig, $self ) = @_;
+
+    # Abort if no lockfile has been specified
+    return if !$self->lockfile;
+
+    # use the original lockfile name appended with .command
+    my $control_file = $self->lockfile . '.command';
+
+    # Open and lock
+    my $control_file_fh = $self->_init_fh( '>>', $control_file );
+    flock $control_file_fh, LOCK_EX;
+
+    # Run some code
+    my $rc = $self->$orig;
+
+    # Unlock and close
+    flock $control_file_fh, LOCK_UN;
+    close $control_file_fh;
+
+    # Return output of code, not close()
+    return $rc;
+  };
+
+  sub _init_fh {
+    my ( $self, $mode, $filename ) = @_;
+
+    if ( !-e $filename ) {
+      File::Path::make_path($filename);
+      rmdir $filename;
+    }
+
+    open my ($filehandle), $mode, $filename;
+    return $filehandle;
+  }
+
   sub _lockfile_is_valid {
     my ($self) = @_;
 
@@ -132,7 +171,7 @@ BEGIN {
     die 'lockfile is not a empty file'
       if !-z $self->lockfile;
 
-    die 'lockfile is writeable by the current process'
+    die 'lockfile is not writeable by the current process'
       if !-w $self->lockfile;
 
     return 1;
@@ -147,18 +186,9 @@ BEGIN {
     die 'A lockfile already exists but it is not an empty writable file'
       if -e $self->lockfile && !$self->_lockfile_is_valid;
 
-    # create the entire path, and remove the innermost directory
-    if ( !-e $self->lockfile ) {
-      File::Path::make_path( $self->lockfile );
-      rmdir $self->lockfile;
-    }
-
     # Finally open the file and place a lock on it
-    ## no critic (RequireBriefOpen)
-    open my $LOCK_FH, '>>', $self->lockfile;
+    my $LOCK_FH = $self->_init_fh( '>>', $self->lockfile );
     flock $LOCK_FH, LOCK_EX | LOCK_NB or return;
-
-    ## use critic
 
     # Maintain the lock troughout the runtime of the app. Store the FH.
     $self->_lock_fh($LOCK_FH);
@@ -179,7 +209,7 @@ BEGIN {
     }
     else {
       $self->clear_lock_fh;
-      unlink $self->lockfile if $self->_lockfile_is_valid;
+      $self->_lockfile_is_valid && unlink $self->lockfile;
     }
 
     return $close_rc;
@@ -194,20 +224,13 @@ BEGIN {
     die 'A pidfile already exist, but is not a regular writable file'
       if -e $self->pidfile && ( !-f $self->pidfile || !-w $self->pidfile );
 
-    # create the entire path, and remove the innermost directory
-    if ( !-e $self->pidfile ) {
-      File::Path::make_path( $self->pidfile );
-      rmdir $self->pidfile;
-    }
-
     # write the actual file
     {
       ## no critic (ProhibitLocalVars)
       local $OUTPUT_AUTOFLUSH = 1;
 
       ## use critic
-
-      open my $PID_FH, '>', $self->pidfile;
+      my $PID_FH = $self->_init_fh( '>', $self->pidfile );
       print {$PID_FH} $PID;
       close $PID_FH;
     }
@@ -324,7 +347,7 @@ BEGIN {
 
     if ( !$self->pidfile || !-e $self->pidfile ) {
       say 'No pidfile, not able to identify process';
-      return '0 but true';
+      return 0;
     }
 
     my $pid = $self->_read_pid;
@@ -337,6 +360,9 @@ BEGIN {
 
     # using alarm and a blocking flock would be more robust.
     # but may cause problems on windows. (untested)
+    # the entire stop routine is protected by a secondary flock 'around' start,
+    # stop and reload methods. This makes it impossible to stop and start
+    # another instance during the sleep call.
     WAIT_FOR_EXIT:
     foreach my $wait_for_exit ( 1 .. $self->timeout ) {
       sleep 1;
@@ -347,38 +373,38 @@ BEGIN {
       }
     }
 
+    # Successful shutdown
     return '0 but true';
   }
 
   sub restart {
     my ($self) = @_;
 
-    # Stop the process
-    if ( !$self->stop ) {
-      say 'restart aborted';
-      return 0;
-    }
+    # Start a new if stop is successful
+    return $self->start if $self->stop;
 
-    # Process stopped ok, start a new
-    return $self->start;
+    # Stop failed:
+    say 'Restart aborted';
+    return 0;
   }
 
   sub reload {
     my ($self) = @_;
 
-    if ( $self->_is_running ) {
+    if ( $self->_is_running && $self->pidfile ) {
       my $pid = $self->_read_pid;
 
       my $rc = kill 'HUP', $pid;
-      say $rc
+      my $message = $rc
         ? "PID: $pid, was signaled to reload"
         : "Failed to signal PID: $pid";
 
+      say $message;
       return '0 but true';
     }
 
     say 'No process to signal';
-    return '0 but true';
+    return 0;
   }
 
   sub run {
@@ -400,7 +426,8 @@ BEGIN {
     }
 
     # Create base dir if none exists.
-    return 1 if !-e $self->basedir && !File::Path::make_path( $self->basedir );
+    return 1
+      if !-e $self->basedir && !File::Path::make_path( $self->basedir );
 
     # Change to running dir, fail if base dir is not a directory
     return 2 if !-d $self->basedir || !chdir $self->basedir;

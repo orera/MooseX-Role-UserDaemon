@@ -38,10 +38,10 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   # Check for valid methods
   my @subs = qw(
-    start       stop      status
-    restart     reload    run
-    _lock       _unlock   _is_running
-    _write_pid  _read_pid _delete_pid
+    start       stop               status
+    restart     reload             run
+    _lock       _unlock            _is_running
+    _write_pid  _read_pid          _delete_pid
     _daemonize  _lockfile_is_valid
   );
 
@@ -67,8 +67,10 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   ok( !-e $app->pidfile, 'pidfile does not exist' );
 
   # Test public methods
-  my @modes
-    = qw(status start status restart stop status restart stop stop run status stop);
+  my @modes = qw(
+    status  start  status restart stop   status
+    restart stop   stop   run     status stop
+  );
 
   my %mode_prints = (
     run   => [ qr{^Starting\.\.\.}, ],
