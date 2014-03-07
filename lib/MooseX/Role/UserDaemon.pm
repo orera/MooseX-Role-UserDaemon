@@ -139,14 +139,14 @@ BEGIN {
     my $control_file_fh = $self->_init_fh( '>>', $control_file );
     flock $control_file_fh, LOCK_EX;
 
-    # Run some code
+    # Run code
     my $rc = $self->$orig;
 
     # Unlock and close
     flock $control_file_fh, LOCK_UN;
     close $control_file_fh;
 
-    # Return output of code, not close()
+    # Return output of code
     return $rc;
   };
 
@@ -187,11 +187,11 @@ BEGIN {
       if -e $self->lockfile && !$self->_lockfile_is_valid;
 
     # Finally open the file and place a lock on it
-    my $LOCK_FH = $self->_init_fh( '>>', $self->lockfile );
-    flock $LOCK_FH, LOCK_EX | LOCK_NB or return;
+    my $lock_fh = $self->_init_fh( '>>', $self->lockfile );
+    flock $lock_fh, LOCK_EX | LOCK_NB or return;
 
     # Maintain the lock troughout the runtime of the app. Store the FH.
-    $self->_lock_fh($LOCK_FH);
+    $self->_lock_fh($lock_fh);
 
     return 1;
   }
@@ -230,9 +230,9 @@ BEGIN {
       local $OUTPUT_AUTOFLUSH = 1;
 
       ## use critic
-      my $PID_FH = $self->_init_fh( '>', $self->pidfile );
-      print {$PID_FH} $PID;
-      close $PID_FH;
+      my $pid_fh = $self->_init_fh( '>', $self->pidfile );
+      print {$pid_fh} $PID;
+      close $pid_fh;
     }
 
     return 1;
@@ -250,11 +250,11 @@ BEGIN {
     die 'pidfile is not a regular file or is not readable'
       if !-f $self->pidfile || !-r $self->pidfile;
 
-    open my $PID_FH, '<', $self->pidfile;
-    my $DAEMON_PID = do { local $INPUT_RECORD_SEPARATOR = undef; <$PID_FH> };
-    close $PID_FH;
+    open my $pid_fh, '<', $self->pidfile;
+    my $daemon_pid = do { local $INPUT_RECORD_SEPARATOR = undef; <$pid_fh> };
+    close $pid_fh;
 
-    return $DAEMON_PID;
+    return $daemon_pid;
   }
 
   sub _delete_pid {

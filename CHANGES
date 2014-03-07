@@ -1,10 +1,22 @@
 ==================================================
-Changes from 2013-02-13 00:00:00 +0000 to present.
+Changes from 2013-03-07 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-02-13 19:54:03 +0000
+version 0.05 at 2014-03-07 21:33:36 +0000
 -----------------------------------------
+
+  Change: fde02bbc77e336b18b824576dbc5b6a5c8b939fe
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-03-02 20:00:49 +0000
+
+    stylistic changes 
+
+  Change: 8fee7d93805b8cefba00634cd22e8996a8f3518a
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-03-02 19:35:59 +0000
+
+    added .gitignore to the repo 
 
   Change: 908cee5900ebda023a361947b7e717a001dc4919
   Author: Tore Andersson <tore.andersson@gmail.com>
