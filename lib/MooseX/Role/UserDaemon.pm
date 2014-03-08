@@ -293,18 +293,18 @@ BEGIN {
     defined( my $pid1 = fork ) or die "Can’t fork: $ERRNO";
     return '0 but true' if $pid1;    # Original parent exit
 
-    # Redirect STD* to /dev/null
-    open STDIN,  '<',  File::Spec->devnull;
-    open STDOUT, '>>', File::Spec->devnull;
-    open STDERR, '>>', File::Spec->devnull;
-
     # Become session leader
     POSIX::setsid
       or die "Unable to to become session leader: $ERRNO";
 
     # Fork twice
     defined( my $pid2 = fork ) or die "Can’t fork: $ERRNO";
-    exit if $pid2;    # Intermediate parent exit
+    exit if $pid2;                   # Intermediate parent exit
+
+    # Redirect STD* to /dev/null
+    open STDIN,  '<',  File::Spec->devnull;
+    open STDOUT, '>>', File::Spec->devnull;
+    open STDERR, '>>', File::Spec->devnull;
 
     # Child returns false.
     return;
@@ -358,11 +358,11 @@ BEGIN {
       return 8;
     };
 
-    # using alarm and a blocking flock would be more robust.
-    # but may cause problems on windows. (untested)
-    # the entire stop routine is protected by a secondary flock 'around' start,
-    # stop and reload methods. This makes it impossible to stop and start
-    # another instance during the sleep call.
+   # using alarm and a blocking flock would be more robust.
+   # but may cause problems on windows. (untested)
+   # the entire stop routine is protected by a secondary flock 'around' start,
+   # stop and reload methods. This makes it impossible to stop and start
+   # another instance during the sleep call.
     WAIT_FOR_EXIT:
     foreach my $wait_for_exit ( 1 .. $self->timeout ) {
       sleep 1;
@@ -395,7 +395,8 @@ BEGIN {
       my $pid = $self->_read_pid;
 
       my $rc = kill 'HUP', $pid;
-      my $message = $rc
+      my $message
+        = $rc
         ? "PID: $pid, was signaled to reload"
         : "Failed to signal PID: $pid";
 
