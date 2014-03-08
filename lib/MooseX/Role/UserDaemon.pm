@@ -209,7 +209,6 @@ BEGIN {
     }
     else {
       $self->clear_lock_fh;
-      #$self->_lockfile_is_valid && unlink $self->lockfile;
     }
 
     return $close_rc;
@@ -266,12 +265,16 @@ BEGIN {
     die 'pidfile does not exist'
       if !-e $self->pidfile;
 
-    die 'pidfile is not a regular file or is not writable'
-      if !-f $self->pidfile || !-w $self->pidfile;
+    die 'pidfile is not a regular file'
+      if !-f $self->pidfile;
+      
+    die 'pidfile is not writable'
+      if !-w $self->pidfile;
 
     return unlink $self->pidfile;
   }
 
+  # Check if exists a locked version of the lockfile already
   sub _is_running {
     my ($self) = @_;
 

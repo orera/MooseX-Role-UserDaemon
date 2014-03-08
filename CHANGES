@@ -3,8 +3,14 @@ Changes from 2013-03-08 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-03-08 10:07:45 +0000
+version 0.05 at 2014-03-08 12:44:54 +0000
 -----------------------------------------
+
+  Change: 03ab92ba1419eec3e2b3963847be823c712d3523
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-03-08 13:44:24 +0000
+
+    No longer remove lockfile after unlocking 
 
   Change: 7782956db907d69aae36e5e2a3dd040c2998e5bf
   Author: Tore Andersson <tore.andersson@gmail.com>
