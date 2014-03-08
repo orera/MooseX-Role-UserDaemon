@@ -56,7 +56,6 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   ok( -e $app->lockfile,  'lockfile exists' );
   ok( $app->_is_running,  '_is_running() return success' );
   ok( $app->_unlock,      '_unlock() return success' );
-  ok( !-e $app->lockfile, 'lockfile does not exists' );
 
   # Pidfile test
   ok( !-e $app->pidfile, 'pidfile does not exists' );

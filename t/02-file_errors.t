@@ -54,7 +54,7 @@ Readonly my $no_mode => 0000;
   $app->_lock;
   ok( -e $app->lockfile, 'Lockfile exist after locking' );
   $app->_unlock;
-  ok( !-e $app->lockfile, 'Lockfile have been removed after unlocking' );
+  unlink $app->lockfile; # Remove lockfile so not to cause truble later in test.
 
   my $original_lockfile = $app->lockfile;
   $app->lockfile('');
