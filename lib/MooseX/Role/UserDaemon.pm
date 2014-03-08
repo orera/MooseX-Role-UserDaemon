@@ -209,7 +209,7 @@ BEGIN {
     }
     else {
       $self->clear_lock_fh;
-      $self->_lockfile_is_valid && unlink $self->lockfile;
+      #$self->_lockfile_is_valid && unlink $self->lockfile;
     }
 
     return $close_rc;
