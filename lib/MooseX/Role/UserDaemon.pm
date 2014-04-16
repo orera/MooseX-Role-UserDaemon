@@ -24,13 +24,24 @@ BEGIN {
   has '_name' => (
     is      => 'ro',
     isa     => 'Str',
-    default => sub { File::Basename::fileparse $PROGRAM_NAME },
+    default => sub {    # The program name should not be to exotic.
+
+      # First replace unexpected chars with _ to pass unit tests (t/..);
+      $PROGRAM_NAME =~ s/[^\w.,_ -]+/_/g;
+
+      # Then capture to pass taintmode.
+      ($PROGRAM_NAME) = $PROGRAM_NAME =~ /\A([\w.,_ -]+)\z/
+        or die 'program name contain invalid characters';
+
+      return File::Basename::fileparse $PROGRAM_NAME;
+    },
   );
 
   has '_valid_commands' => (
-    is      => 'ro',
-    isa     => 'RegexpRef',
-    default => sub {qr/status|start|stop|reload|restart/xms},
+    is       => 'ro',
+    isa      => 'RegexpRef',
+    default  => sub {qr/(status|start|stop|reload|restart)/},
+    init_arg => undef,
   );
 
   has 'timeout' => (
@@ -71,9 +82,10 @@ BEGIN {
   );
 
   has '_lock_fh' => (
-    is      => 'rw',
-    isa     => 'Maybe[FileHandle]',
-    clearer => 'clear_lock_fh',
+    is       => 'rw',
+    isa      => 'Maybe[FileHandle]',
+    init_arg => undef,
+    clearer  => 'clear_lock_fh',
   );
 
   sub _build_basedir {
@@ -251,6 +263,8 @@ BEGIN {
 
     open my $pid_fh, '<', $self->pidfile;
     my $daemon_pid = do { local $INPUT_RECORD_SEPARATOR = undef; <$pid_fh> };
+    ($daemon_pid) = $daemon_pid =~ /\A(\d+)\z/
+      or die 'pidfile contained something other than digits';
     close $pid_fh;
 
     return $daemon_pid;
@@ -267,7 +281,7 @@ BEGIN {
 
     die 'pidfile is not a regular file'
       if !-f $self->pidfile;
-      
+
     die 'pidfile is not writable'
       if !-w $self->pidfile;
 
@@ -424,10 +438,10 @@ BEGIN {
     $command ||= 'start';
 
     # Validate that mode is valid/approved
-    if ( $command !~ $self->_valid_commands ) {
+    ($command) = $command =~ $self->_valid_commands or do {
       say "Invalid command: $command";
       return 9;
-    }
+    };
 
     # Create base dir if none exists.
     return 1
