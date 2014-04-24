@@ -24,22 +24,27 @@ BEGIN {
   has '_name' => (
     is      => 'ro',
     isa     => 'Str',
+    lazy    => 1,
     default => sub {    # The program name should not be to exotic.
 
+      # Aviod modifying $PORGRAM_NAME directly
+      my $program_name = $PROGRAM_NAME;
+
       # First replace unexpected chars with _ to pass unit tests (t/..);
-      $PROGRAM_NAME =~ s/[^\w.,_ -]+/_/g;
+      $program_name =~ s/[^\w.,_ -]+/_/g;
 
       # Then capture to pass taintmode.
-      ($PROGRAM_NAME) = $PROGRAM_NAME =~ /\A([\w.,_ -]+)\z/
+      ($program_name) = $program_name =~ /\A([\w.,_ -]+)\z/
         or die 'program name contain invalid characters.';
 
-      return File::Basename::fileparse $PROGRAM_NAME;
+      return File::Basename::fileparse $program_name;
     },
   );
 
   has '_valid_commands' => (
     is       => 'ro',
     isa      => 'RegexpRef',
+    lazy     => 1,
     default  => sub {qr/\A(status|start|stop|reload|restart)\z/},
     init_arg => undef,
   );
@@ -47,6 +52,7 @@ BEGIN {
   has 'timeout' => (
     is      => 'ro',
     isa     => 'Int',
+    lazy    => 1,
     default => 5,
     documentation =>
       '--timeout=n, default = 5, time in seconds to wait for the daemon to exit.',
@@ -55,6 +61,7 @@ BEGIN {
   has 'foreground' => (
     is      => 'ro',
     isa     => 'Int',
+    lazy    => 1,
     default => 0,
     documentation =>
       '--foreground=1 will run the app in the foreground instead of daemonizing it.',
@@ -68,14 +75,14 @@ BEGIN {
   );
 
   has 'lockfile' => (
-    is            => 'rw',
+    is            => 'ro',
     isa           => 'Str',
     lazy_build    => 1,
     documentation => '--basedir=/path/to/file, Use custom lockfile.',
   );
 
   has 'pidfile' => (
-    is            => 'rw',
+    is            => 'ro',
     isa           => 'Str',
     lazy_build    => 1,
     documentation => '--pidfile=/path/to/file, Use custom pidfile.',
@@ -135,32 +142,6 @@ BEGIN {
 
     # Failed to remove lock
     return 7 if !$self->_unlock;
-  };
-
-  # Add a secondary blocking lockfile to protect some of the control commands.
-  # This is necessary to protect the timeout function in the stop() routine
-  around [qw(start stop reload)] => sub {
-    my ( $orig, $self ) = @_;
-
-    # Abort if no lockfile has been specified
-    return if !$self->lockfile;
-
-    # use the original lockfile name appended with .command
-    my $control_file = $self->lockfile . '.command';
-
-    # Open and lock
-    my $control_file_fh = $self->_init_fh( '>>', $control_file );
-    flock $control_file_fh, LOCK_EX;
-
-    # Run code
-    my $rc = $self->$orig;
-
-    # Unlock and close
-    flock $control_file_fh, LOCK_UN;
-    close $control_file_fh;
-
-    # Return output of code
-    return $rc;
   };
 
   sub _init_fh {
@@ -379,23 +360,32 @@ BEGIN {
       return 8;
     };
 
-   # using alarm and a blocking flock would be more robust.
-   # but may cause problems on windows. (untested)
-   # the entire stop routine is protected by a secondary flock 'around' start,
-   # stop and reload methods. This makes it impossible to stop and start
-   # another instance during the sleep call.
-    WAIT_FOR_EXIT:
-    foreach my $wait_for_exit ( 1 .. $self->timeout ) {
-      sleep 1;
-      last WAIT_FOR_EXIT if !$self->_is_running;
-      if ( $wait_for_exit == $self->timeout ) {
-        say 'Timed out waiting for process to exit.';
-        return 0;    # Return 0 to please both unit tests and exit
-      }
-    }
+    # Return if no lockfile, can't determine when stop has completed anyway
+    return '0 but true' if !$self->lockfile;
 
-    # Successful shutdown
-    return '0 but true';
+    # Set to 1 if we time out waiting for the process to stop;
+    my $timeout_rc;
+
+    # Timeout signal handler
+    local $SIG{'ALRM'} = sub {
+      $timeout_rc = 1;
+      say 'Timed out waiting for process to exit.';
+    };
+
+    # Start timer and open filehandle
+    alarm $self->timeout;
+    my $lockfile_fh = $self->_init_fh( '>>', $self->lockfile );
+
+    # Lock the lockfile
+    flock $lockfile_fh, LOCK_EX;
+
+    # Abort timeout if lock is attained before the timeout period.
+    alarm 0;
+    close $lockfile_fh;
+
+    return $timeout_rc
+      ? 0             # Timed out
+      :'0 but true';  # Successful shutdown
   }
 
   sub restart {
