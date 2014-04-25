@@ -87,7 +87,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
       qr{^Running with PID:\s\d+},
     ],
     restart => [
-      qr{^Stopping\sPID:\s\d+\nStarting\.\.\.},
+      qr{^Stopping\sPID:\s\d+\.\.\.\nStarting\.\.\.},
       qr{Process not running, nothing to stop.\nStarting\.\.\.},
     ],
   );

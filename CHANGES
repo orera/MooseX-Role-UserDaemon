@@ -1,10 +1,38 @@
 ==================================================
-Changes from 2013-03-09 00:00:00 +0000 to present.
+Changes from 2013-04-25 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-03-09 12:50:56 +0000
+version 0.05 at 2014-04-25 19:44:30 +0000
 -----------------------------------------
+
+  Change: a9a40db3edc49f431651df967cf312abf05da4f1
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-04-25 00:37:24 +0000
+
+    replaced sleep loop with alarm in stop() (giving up trying to support
+    windows). Also no longer protecting the start stop and reload command
+    against excessive number of requests. Lastly a few changes to make
+    perlcritic happier. 
+
+  Change: d0447bcdb29bb60368e7d2114e012c5dcf889bc3
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-04-23 22:34:58 +0000
+
+    added more unit tests 
+
+  Change: c8277f13a380d30748b463555589d212b3384d9d
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-04-23 22:34:14 +0000
+
+    Aviod exiting prematurly when usage text is envoked by invalid
+    commands + stylistic changes 
+
+  Change: 1e9a49697243292893b3b4082b4b3e8210355f71
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-04-16 21:06:02 +0000
+
+    Added fixes to be able to run under tainmode 
 
   Change: 03ab92ba1419eec3e2b3963847be823c712d3523
   Author: Tore Andersson <tore.andersson@gmail.com>

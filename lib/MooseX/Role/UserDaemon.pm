@@ -24,26 +24,44 @@ BEGIN {
   has '_name' => (
     is      => 'ro',
     isa     => 'Str',
-    default => sub { File::Basename::fileparse $PROGRAM_NAME },
+    lazy    => 1,
+    default => sub {    # The program name should not be to exotic.
+
+      # Aviod modifying $PORGRAM_NAME directly
+      my $program_name = $PROGRAM_NAME;
+
+      # First replace unexpected chars with _ to pass unit tests (t/..);
+      $program_name =~ s/[^\w.,_ -]+/_/g;
+
+      # Then capture to pass taintmode.
+      ($program_name) = $program_name =~ /\A([\w.,_ -]+)\z/
+        or die 'program name contain invalid characters.';
+
+      return File::Basename::fileparse $program_name;
+    },
   );
 
   has '_valid_commands' => (
-    is      => 'ro',
-    isa     => 'RegexpRef',
-    default => sub {qr/status|start|stop|reload|restart/xms},
+    is       => 'ro',
+    isa      => 'RegexpRef',
+    lazy     => 1,
+    default  => sub {qr/\A(status|start|stop|reload|restart)\z/},
+    init_arg => undef,
   );
 
   has 'timeout' => (
     is      => 'ro',
     isa     => 'Int',
+    lazy    => 1,
     default => 5,
     documentation =>
-      '--timeout=n, default = 5, time in seconds to wait for the daemon to exit',
+      '--timeout=n, default = 5, time in seconds to wait for the daemon to exit.',
   );
 
   has 'foreground' => (
     is      => 'ro',
     isa     => 'Int',
+    lazy    => 1,
     default => 0,
     documentation =>
       '--foreground=1 will run the app in the foreground instead of daemonizing it.',
@@ -57,23 +75,24 @@ BEGIN {
   );
 
   has 'lockfile' => (
-    is            => 'rw',
+    is            => 'ro',
     isa           => 'Str',
     lazy_build    => 1,
     documentation => '--basedir=/path/to/file, Use custom lockfile.',
   );
 
   has 'pidfile' => (
-    is            => 'rw',
+    is            => 'ro',
     isa           => 'Str',
     lazy_build    => 1,
     documentation => '--pidfile=/path/to/file, Use custom pidfile.',
   );
 
   has '_lock_fh' => (
-    is      => 'rw',
-    isa     => 'Maybe[FileHandle]',
-    clearer => 'clear_lock_fh',
+    is       => 'rw',
+    isa      => 'Maybe[FileHandle]',
+    init_arg => undef,
+    clearer  => 'clear_lock_fh',
   );
 
   sub _build_basedir {
@@ -118,46 +137,23 @@ BEGIN {
     # Failed to establish a lock
     return 4 if !$self->_lock;
 
+    # run main
     $self->$orig;
 
     # Failed to remove lock
     return 7 if !$self->_unlock;
   };
 
-  # Add a secondary blocking lockfile to protect some of the control commands.
-  # This is necessary to protect the timeout function in the stop() routine
-  around [qw(start stop reload)] => sub {
-    my ( $orig, $self ) = @_;
-
-    # Abort if no lockfile has been specified
-    return if !$self->lockfile;
-
-    # use the original lockfile name appended with .command
-    my $control_file = $self->lockfile . '.command';
-
-    # Open and lock
-    my $control_file_fh = $self->_init_fh( '>>', $control_file );
-    flock $control_file_fh, LOCK_EX;
-
-    # Run code
-    my $rc = $self->$orig;
-
-    # Unlock and close
-    flock $control_file_fh, LOCK_UN;
-    close $control_file_fh;
-
-    # Return output of code
-    return $rc;
-  };
-
   sub _init_fh {
     my ( $self, $mode, $filename ) = @_;
 
+    # Create leading directories if missing.
     if ( !-e $filename ) {
       File::Path::make_path($filename);
       rmdir $filename;
     }
 
+    # Open filehandle
     open my ($filehandle), $mode, $filename;
     return $filehandle;
   }
@@ -165,13 +161,13 @@ BEGIN {
   sub _lockfile_is_valid {
     my ($self) = @_;
 
-    die 'lockfile is not a regular file'
+    die 'lockfile is not a regular file.'
       if !-f $self->lockfile;
 
-    die 'lockfile is not a empty file'
+    die 'lockfile is not a empty file.'
       if !-z $self->lockfile;
 
-    die 'lockfile is not writeable by the current process'
+    die 'lockfile is not writeable by the current process.'
       if !-w $self->lockfile;
 
     return 1;
@@ -183,7 +179,7 @@ BEGIN {
     die 'Must specify a path to be used as a lock file.'
       if !$self->lockfile;
 
-    die 'A lockfile already exists but it is not an empty writable file'
+    die 'A lockfile already exists but it is not an empty writable file.'
       if -e $self->lockfile && !$self->_lockfile_is_valid;
 
     # Finally open the file and place a lock on it
@@ -199,7 +195,7 @@ BEGIN {
   sub _unlock {
     my ($self) = @_;
 
-    die 'Trying to unlock a non-existing lockfile filehandle'
+    die 'Trying to unlock a non-existing lockfile filehandle.'
       if !$self->_lock_fh;
 
     my $close_rc = close $self->_lock_fh;
@@ -220,7 +216,7 @@ BEGIN {
     die 'Must specify a path to be used as a pidfile.'
       if !$self->pidfile;
 
-    die 'A pidfile already exist, but is not a regular writable file'
+    die 'A pidfile already exist, but is not a regular writable file.'
       if -e $self->pidfile && ( !-f $self->pidfile || !-w $self->pidfile );
 
     # write the actual file
@@ -243,14 +239,16 @@ BEGIN {
     die 'Must specify a path to be used as a pidfile.'
       if !$self->pidfile;
 
-    die 'pidfile does not exist'
+    die 'pidfile does not exist.'
       if !-e $self->pidfile;
 
-    die 'pidfile is not a regular file or is not readable'
+    die 'pidfile is not a regular file or is not readable.'
       if !-f $self->pidfile || !-r $self->pidfile;
 
     open my $pid_fh, '<', $self->pidfile;
     my $daemon_pid = do { local $INPUT_RECORD_SEPARATOR = undef; <$pid_fh> };
+    ($daemon_pid) = $daemon_pid =~ /\A(\d+)\z/
+      or die 'pidfile contained something other than digits.';
     close $pid_fh;
 
     return $daemon_pid;
@@ -267,7 +265,7 @@ BEGIN {
 
     die 'pidfile is not a regular file'
       if !-f $self->pidfile;
-      
+
     die 'pidfile is not writable'
       if !-w $self->pidfile;
 
@@ -349,35 +347,45 @@ BEGIN {
     }
 
     if ( !$self->pidfile || !-e $self->pidfile ) {
-      say 'No pidfile, not able to identify process';
-      return 0;
+      say 'No pidfile, not able to identify process.';
+      return 0;    # Return 0 to please both unit tests and exit
     }
 
+    # Get process id
     my $pid = $self->_read_pid;
 
-    say "Stopping PID: $pid";
+    say "Stopping PID: $pid...";
     kill 0, $pid and kill 'INT', $pid or do {
       warn 'Not able to issue kill signal.';
       return 8;
     };
 
-   # using alarm and a blocking flock would be more robust.
-   # but may cause problems on windows. (untested)
-   # the entire stop routine is protected by a secondary flock 'around' start,
-   # stop and reload methods. This makes it impossible to stop and start
-   # another instance during the sleep call.
-    WAIT_FOR_EXIT:
-    foreach my $wait_for_exit ( 1 .. $self->timeout ) {
-      sleep 1;
-      last WAIT_FOR_EXIT if !$self->_is_running;
-      if ( $wait_for_exit == $self->timeout ) {
-        say 'Timed out waiting for process to exit';
-        return 0;
-      }
-    }
+    # Return if no lockfile, can't determine when stop has completed anyway
+    return '0 but true' if !$self->lockfile;
 
-    # Successful shutdown
-    return '0 but true';
+    # Set to 1 if we time out waiting for the process to stop;
+    my $timeout_rc;
+
+    # Timeout signal handler
+    local $SIG{'ALRM'} = sub {
+      $timeout_rc = 1;
+      say 'Timed out waiting for process to exit.';
+    };
+
+    # Start timer and open filehandle
+    alarm $self->timeout;
+    my $lockfile_fh = $self->_init_fh( '>>', $self->lockfile );
+
+    # Lock the lockfile
+    flock $lockfile_fh, LOCK_EX;
+
+    # Abort timeout if lock is attained before the timeout period.
+    alarm 0;
+    close $lockfile_fh;
+
+    return $timeout_rc
+      ? 0             # Timed out
+      :'0 but true';  # Successful shutdown
   }
 
   sub restart {
@@ -387,7 +395,9 @@ BEGIN {
     return $self->start if $self->stop;
 
     # Stop failed:
-    say 'Restart aborted';
+    say 'Failed to stop process, restart aborted.';
+
+    # Return 0 to please both unit tests and exit
     return 0;
   }
 
@@ -395,28 +405,34 @@ BEGIN {
     my ($self) = @_;
 
     if ( $self->_is_running && $self->pidfile ) {
+
+      # Get the process id
       my $pid = $self->_read_pid;
 
+      # Signal the process
       my $rc = kill 'HUP', $pid;
-      my $message
-        = $rc
-        ? "PID: $pid, was signaled to reload"
-        : "Failed to signal PID: $pid";
-
-      say $message;
-      return '0 but true';
+      if ($rc) {
+        say "PID: $pid, was signaled to reload";
+        return '0 but true';
+      }
+      else {
+        say "Failed to signal PID: $pid";
+        return 0;    # Return 0 to please both unit tests and exit
+      }
     }
 
-    say 'No process to signal';
+    say 'Could not find a process to signal.';
+
+    # Return 0 to please both unit tests and exit
     return 0;
   }
 
   sub run {
     my ($self) = @_;
 
-    # Get run mode.
-    my $command;
-    $command = $self->can('extra_argv')
+    # Get the command to run.
+    my $command
+      = $self->can('extra_argv') && ref( $self->extra_argv ) eq 'ARRAY'
       ? shift $self->extra_argv    # If MooseX::Getopt is in use.
       : shift @ARGV;               # Else get it from @ARGV
 
@@ -424,10 +440,12 @@ BEGIN {
     $command ||= 'start';
 
     # Validate that mode is valid/approved
-    if ( $command !~ $self->_valid_commands ) {
-      say "Invalid command: $command";
+    ($command) = $command =~ $self->_valid_commands or do {
+      say $self->can('usage') && $self->usage->can('text')
+        ? $self->usage->text              # If MooseX::Getopt is in use
+        : 'The command is not valid.';    # else default to a simple message
       return 9;
-    }
+    };
 
     # Create base dir if none exists.
     return 1
