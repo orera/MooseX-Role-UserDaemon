@@ -1,0 +1,267 @@
+NAME
+
+    MooseX::Role::UserDaemon - Simplify writing of user space daemons
+
+VERSION
+
+    version 0.05
+
+SYNOPSIS
+
+    In your module:
+
+      package YourApp;
+      use Moose;
+      with qw(MooseX::Role::UserDaemon);
+    
+      # MooseX::Role::UserDaemon requires the consuming class to implement main()
+      sub main {
+        my ($self) = @_;
+    
+        # It is the responsibility of the consuming class to capture INT signals
+        # to allow for graceful shutdown of the app.
+        # In addition the HUP signal should be caught and used for config reload.
+        my $run = 1;
+        local $SIG{'INT'} = sub { $run = 0; };
+    
+        FOREVER_LOOP:
+        while ($run) {
+          ...
+        }
+    
+        # It is recomended that main() return '0 but true' on success.
+        # the return value of main is feed directly to exit()
+        return '0 but true';
+      }
+
+    In your script:
+
+      use YourApp;
+      my $app = YourApp->new;
+    
+      exit $app->run unless caller 0;
+
+    On the commanline:
+
+      Start your app
+      $ yourapp.pl start
+        Starting...
+    
+      Check your status
+      $ yourapp.pl status
+        Running with PID: ...
+    
+      Stop your app
+      $ yourapp.pl stop
+        Stopping PID: ...
+
+    Or preferably in combination with MooseX::SimpleConfig and/or
+    MooseX::Getopt In your module:
+
+      package YourApp;
+      use Moose;
+    
+      # Enable use of configfile and commandline parameters as well
+      with qw(MooseX::Role::UserDaemon MooseX::SimpleConfig MooseX::Getopt);
+    
+      # '+configfile' Only required when using MooseX::SimpleConfig
+      has '+configfile' => (
+        is      => 'ro',
+        isa     => 'Str',
+        default => sub {
+          File::Spec->catdir( File::HomeDir->my_home, '.yourapp',
+            'yourapp.conf' );
+        },
+        documentation => 'Use custom configfile.',   # Getopt use this description
+      );
+    
+      # MooseX::Role::UserDaemon requires the consuming class to implement main()
+      sub main {
+        my ($self) = @_;
+    
+        # the user have to implement capturing signals and exiting.
+        my $run = 1;
+        local $SIG{'INT'} = sub { $run = 0; };
+    
+        FOREVER_LOOP:
+        while ($run) {
+          sleep 1;
+        }
+          
+        # It is recomended that main() return '0 but true' on success.
+        # the return value of main is feed directly to exit()
+        return '0 but true';
+      }
+
+    In your script:
+
+      use YourApp;
+    
+      # use new_with_options when using Getopt/SimpleConfig
+      my $app = YourApp->new_with_options;
+    
+      exit $app->run unless caller 0;
+
+    On the commanline:
+
+      Start your app
+      $ yourapp.pl start
+        Starting...
+    
+      Check your status
+      $ yourapp.pl status
+        Running with PID: ...
+    
+      Stop your app
+      $ yourapp.pl stop
+        Stopping PID: ...
+
+DESCRIPTION
+
+    This module aims to simplify implementation of daemons and apps ment to
+    be run for normal users. Not system wide services or servers.
+
+    This module is not suited for implementing daemons running as root or
+    other system users.
+
+    When using this role your script will by default:
+
+    1. Create a hidden folder in the users home directory with the same
+    name as the script itself. So YourApp.pl will create a directory
+    ~/.yourapp.pl
+
+    2. chdir to this directory.
+
+    3. Daemonize by double forking.
+
+    4. Create a lockfile named lock and place a flock on the file. This
+    lock will be in place until the app shuts down.
+
+    5. Create a pidfile named pid.
+
+    6. run the main() subroutine.
+
+    Five commands are implemented by default: status, start, stop, restart,
+    reload.
+
+ start (default)
+
+    Will launch the application according to the description above.
+
+ stop
+
+    Will read the pid from the pidfile and issue a INT signal.
+
+ restart
+
+    Restart is the same as running stop then start again.
+
+ reload
+
+    Will read the pid from the pidfile and issue a HUP signal.
+
+ status
+
+    Will read the pid from the pidfile and print to STDOUT.
+
+ATTRIBUTES
+
+ _name
+
+    String. Defaults to script name, is used for setting a application
+    folder name.
+
+ _valid_commands
+
+    Regexp. Default is qr/status|start|stop|reload|restart/xms. Whitelist
+    methods which can be called from the command line.
+
+ timeout
+
+    Integer. Default is 5. How much time in seconds it's expected to take
+    after shutting down the app by sending a INT singal. This is used by
+    stop to avoid waiting forever for the app to shut down.
+
+ foreground
+
+    Integer. Default is 0. If set to 1 the app will not daemonize/fork or
+    redirect STD* to /dev/null.
+
+ basedir
+
+    String. Default to an application folder in the users home directory.
+    The app will chdir to this location during startup. This is where we
+    will place lockfile, pidfile and other application files.
+
+ lockfile
+
+    String. Default to /basedir/lockfile
+
+ _lockfile_fh
+
+    Filehandle. Used for holding the lockfile filehandle while the app is
+    running.
+
+ pidfile
+
+    String. Default to /basedir/pid
+
+METHODS
+
+ run
+
+    run() will determine which command was issued to the script, defaults
+    to start if no command is given. By default the valid commands are:
+    status, start, stop, restart, reload
+
+    New commands can be added by the consuming class, it which case the
+    attribute _valid_commands needs to be updated for run() to allow the
+    command to be executed. _valid_commands is a RegexpRef and the default
+    value is: qr/status|start|stop|reload|restart/
+
+    You can set your own _valid_commands in the consuming class, to allow
+    for custom commands like this:
+
+      has '+_valid_commands' => (
+        default => sub {
+          return qr/status|start|stop|restart|custom_command/xms
+        },
+      );
+
+ status
+
+    Checks if the app is running, print status to STDOUT.
+
+ start
+
+    start() call main() after checking that it is not running and after
+    forking (unless foreground mode is enabled).
+
+ stop
+
+    stop() issues a INT signal to the PID listed in the pidfile. It is up
+    to the author to trap this signal and end the application in an orderly
+    fashion.
+
+ restart
+
+    restart() simply call stop(), wait for the app to stop and call
+    start().
+
+ reload
+
+    reload() issues a HUP signal to the PID listed in the pidfile. It is up
+    to the author to trap this signal and do the appropriate thing, usualy
+    to reload configuration files.
+
+AUTHOR
+
+    Tore Andersson <tore.andersson@gmail.com>
+
+COPYRIGHT AND LICENSE
+
+    This software is copyright (c) 2014 by Tore Andersson.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
+
