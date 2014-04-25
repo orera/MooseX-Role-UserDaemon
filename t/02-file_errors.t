@@ -38,14 +38,31 @@ Readonly my $no_mode => 0000;
 
 {
   #
-  # Lockfile tests
+  # Missing lockfile tests
   #
-
-  my $app = App->new;
-  isa_ok( $app, 'App' );
 
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
+
+  my $app = App->new({lockfile => ''});
+  isa_ok( $app, 'App' );
+
+  # Missing lockfile
+  foreach my $sub (qw(_lock _unlock)) {
+    dies_ok { $app->$sub } "$sub die when no lockfile";
+  }
+}
+
+{
+  #
+  # Lockfile tests
+  #
+
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
+
+  my $app = App->new;
+  isa_ok( $app, 'App' );
 
   unlink $app->lockfile
     if -e $app->lockfile;
@@ -56,15 +73,6 @@ Readonly my $no_mode => 0000;
   $app->_unlock;
   unlink $app->lockfile; # Remove lockfile so not to cause truble later in test.
 
-  my $original_lockfile = $app->lockfile;
-  $app->lockfile('');
-
-  # Missing lockfile
-  foreach my $sub (qw(_lock _unlock)) {
-    dies_ok { $app->$sub } "$sub die when no lockfile";
-  }
-
-  $app->lockfile($original_lockfile);
   make_path( $app->lockfile );
 
   # Lockfile is a directory
@@ -103,30 +111,37 @@ Readonly my $no_mode => 0000;
 
 {
   #
-  # PID file tests
+  # Missing pidfile tests
   #
-
-  my $app = App->new;
-  isa_ok( $app, 'App' );
 
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
+
+  my $app = App->new({pidfile => ''});
+  isa_ok( $app, 'App' );
+
+  # PID file not specified
+  foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
+    dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
+  }
+}
+
+{
+  #
+  # Pidfile tests
+  #
+
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
+
+  my $app = App->new;
+  isa_ok( $app, 'App' );
 
   ok( !-e $app->pidfile, 'No PID file' );
   $app->_write_pid;
   ok( -e $app->pidfile, 'PID file exist' );
   $app->_delete_pid;
   ok( !-e $app->pidfile, 'PID file have been removed' );
-
-  my $original_pidfile = $app->pidfile;
-  $app->pidfile('');
-
-  # PID file not specified
-  foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
-    dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
-  }
-
-  $app->pidfile($original_pidfile);
 
   # PID file is not a file
   make_path( $app->pidfile );
