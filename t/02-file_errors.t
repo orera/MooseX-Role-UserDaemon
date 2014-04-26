@@ -44,13 +44,16 @@ Readonly my $no_mode => 0000;
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
 
-  my $app = App->new({lockfile => ''});
+  my $app = App->new( { lockfile => '' } );
   isa_ok( $app, 'App' );
 
   # Missing lockfile
   foreach my $sub (qw(_lock _unlock)) {
     dies_ok { $app->$sub } "$sub die when no lockfile";
   }
+
+  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  ok( $app->stop,         'stop return true when not using lockfile' );
 }
 
 {
@@ -68,10 +71,17 @@ Readonly my $no_mode => 0000;
     if -e $app->lockfile;
 
   ok( !-e $app->lockfile, 'No lockfile exist before first lock' );
-  $app->_lock;
+
+  my $lock_rc = $app->_lock;
   ok( -e $app->lockfile, 'Lockfile exist after locking' );
-  $app->_unlock;
-  unlink $app->lockfile; # Remove lockfile so not to cause truble later in test.
+  ok( $lock_rc,          '_lock returned true on successful lock' );
+  ok( $app->_unlock,     'unlock return true' );
+  ok( -e $app->lockfile, 'Lockfile remains after unlocking' );
+  ok( $app->_lock, 'Locking works when lockfile existed but was not locked' );
+  ok( $app->_unlock, 'unlock return true' );
+
+  unlink
+    $app->lockfile;    # Remove lockfile so not to cause truble later in test.
 
   make_path( $app->lockfile );
 
@@ -117,7 +127,7 @@ Readonly my $no_mode => 0000;
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
 
-  my $app = App->new({pidfile => ''});
+  my $app = App->new( { pidfile => '' } );
   isa_ok( $app, 'App' );
 
   # PID file not specified
@@ -138,8 +148,12 @@ Readonly my $no_mode => 0000;
   isa_ok( $app, 'App' );
 
   ok( !-e $app->pidfile, 'No PID file' );
-  $app->_write_pid;
+
+  my $write_pid_rc = $app->_write_pid;
   ok( -e $app->pidfile, 'PID file exist' );
+  ok( $write_pid_rc,    '_write_pid returned true on success' );
+  ok( $app->_write_pid, '_write_pid return true when file already exists' );
+
   $app->_delete_pid;
   ok( !-e $app->pidfile, 'PID file have been removed' );
 
