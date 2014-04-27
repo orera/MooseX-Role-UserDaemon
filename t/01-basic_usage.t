@@ -67,13 +67,14 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   # Test public methods
   my @modes = qw(
-    status  start  status restart stop   status
-    restart stop   stop   run     status stop
+    status  start   start  status restart stop
+    status  restart stop   stop   run     status
+    stop
   );
 
   my %mode_prints = (
     run   => [ qr{^Starting\.\.\.}, ],
-    start => [ qr{^Starting\.\.\.}, ],
+    start => [ qr{^Starting\.\.\.}, qr{^Running with PID:\s\d+}, ],
     stop  => [
       qr{^Stopping PID:\s\d+},
       qr{^Stopping PID:\s\d+},

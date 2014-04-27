@@ -164,6 +164,14 @@ DESCRIPTION
 
     Will read the pid from the pidfile and print to STDOUT.
 
+NAME
+
+    MooseX::Role::UserDaemon - Simplify writing of user space daemons
+
+VERSION
+
+    version 0.05
+
 ATTRIBUTES
 
  _name
@@ -253,6 +261,17 @@ METHODS
     reload() issues a HUP signal to the PID listed in the pidfile. It is up
     to the author to trap this signal and do the appropriate thing, usualy
     to reload configuration files.
+
+AUTHOR
+
+    Tore Andersson <tore.andersson@gmail.com>
+
+COPYRIGHT AND LICENSE
+
+    This software is copyright (c) 2014 by Tore Andersson.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 
 AUTHOR
 
