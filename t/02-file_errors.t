@@ -19,15 +19,16 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package App;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
-
-  my $run = 1;
-  local $SIG{'INT'} = sub { $run = 0; };
+  with qw(MooseX::Role::UserDaemon);
 
   sub main {
-    while ($run) {
-      sleep 1;
-    }
+    my $run = 1;
+    my $x   = 10;
+
+    local $SIG{'INT'} = sub { $run = 0; };
+
+    while ($run) { sleep 1; $x-- }
+
     exit;
   }
 }
