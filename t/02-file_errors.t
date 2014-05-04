@@ -58,7 +58,7 @@ Readonly my $no_mode => 0000;
   ok( $app->_lock, 'Locking works when lockfile existed but was not locked' );
   ok( $app->_unlock, 'unlock return true' );
 
-  # Remove lockfile so not to cause truble later in test.
+  # Remove lockfile to reset the enviorment before continuing
   unlink $app->lockfile if -e $app->lockfile;
   
   # unlink $app->lockfile
@@ -77,34 +77,34 @@ Readonly my $no_mode => 0000;
   # unlink
     # $app->lockfile;    # Remove lockfile so not to cause truble later in test.
 
-  # make_path( $app->lockfile );
+  make_path( $app->lockfile );
 
-  # # Lockfile is a directory
-  # foreach my $sub (qw(_lock _unlock)) {
-    # dies_ok { $app->$sub } "$sub die when lockfile is a directory";
-  # }
+  # Lockfile is a directory
+  foreach my $sub (qw(_lock _unlock)) {
+    dies_ok { $app->$sub } "$sub die when lockfile is a directory";
+  }
 
-  # rmdir $app->lockfile;
-  # open my $lockfile_fh, '>', $app->lockfile;
-  # print {$lockfile_fh} 'some content';
-  # close $lockfile_fh;
+  rmdir $app->lockfile;
+  open my $lockfile_fh, '>', $app->lockfile;
+  print {$lockfile_fh} 'some content';
+  close $lockfile_fh;
 
-  # # Lockfile contains data
-  # foreach my $sub (qw(_lock _unlock)) {
-    # dies_ok { $app->$sub } "$sub die when lockfile contain data";
-  # }
+  # Lockfile contains data
+  foreach my $sub (qw(_lock _unlock)) {
+    dies_ok { $app->$sub } "$sub die when lockfile contain data";
+  }
 
-  # # Empty the file
-  # open $lockfile_fh, '>', $app->lockfile;
-  # close $lockfile_fh;
+  # Empty the file
+  open $lockfile_fh, '>', $app->lockfile;
+  close $lockfile_fh;
 
-  # chmod $ro_mode, $app->lockfile;
+  chmod $ro_mode, $app->lockfile;
 
-  # # Lockfile contains data
-  # foreach my $sub (qw(_lock _unlock)) {
-    # next if $UID == 0;
-    # dies_ok { $app->$sub } "$sub die when lockfile is not writeable";
-  # }
+  # Lockfile is not writable by the current process
+  foreach my $sub (qw(_lock _unlock)) {
+    next if $UID == 0;
+    dies_ok { $app->$sub } "$sub die when lockfile is not writeable";
+  }
 
   # chmod $rw_mode, $app->lockfile;
   # unlink $app->lockfile;
