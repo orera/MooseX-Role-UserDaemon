@@ -54,9 +54,13 @@ Readonly my $no_mode => 0000;
   ok( -e $app->lockfile,  'lockfile exists' );
   ok( $app->_is_running,  '_is_running() return success' );
   ok( $app->_unlock,      '_unlock() return success' );
+  ok( -e $app->lockfile, 'Lockfile remains after unlocking' );
+  ok( $app->_lock, 'Locking works when lockfile existed but was not locked' );
+  ok( $app->_unlock, 'unlock return true' );
 
-
-
+  # Remove lockfile so not to cause truble later in test.
+  unlink $app->lockfile if -e $app->lockfile;
+  
   # unlink $app->lockfile
     # if -e $app->lockfile;
 
