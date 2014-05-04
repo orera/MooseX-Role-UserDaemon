@@ -48,21 +48,21 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   isa_ok( $app, 'App' );
   can_ok( $app, @subs );
 
-  # Lockfile test
-  ok( !-e $app->lockfile, 'lockfile does not exists' );
-  ok( !$app->_is_running, '_is_running() return false' );
-  ok( $app->_lock,        '_lock() return success' );
-  ok( -e $app->lockfile,  'lockfile exists' );
-  ok( $app->_is_running,  '_is_running() return success' );
-  ok( $app->_unlock,      '_unlock() return success' );
+  # # Lockfile test
+  # ok( !-e $app->lockfile, 'lockfile does not exists' );
+  # ok( !$app->_is_running, '_is_running() return false' );
+  # ok( $app->_lock,        '_lock() return success' );
+  # ok( -e $app->lockfile,  'lockfile exists' );
+  # ok( $app->_is_running,  '_is_running() return success' );
+  # ok( $app->_unlock,      '_unlock() return success' );
 
-  # Pidfile test
-  ok( !-e $app->pidfile, 'pidfile does not exists' );
-  ok( $app->_write_pid,  '_write_pid() return success' );
-  ok( -e $app->pidfile,  'pidfile exists' );
-  cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
-  ok( $app->_delete_pid, '_delete_pid() return success' );
-  ok( !-e $app->pidfile, 'pidfile does not exist' );
+  # # Pidfile test
+  # ok( !-e $app->pidfile, 'pidfile does not exists' );
+  # ok( $app->_write_pid,  '_write_pid() return success' );
+  # ok( -e $app->pidfile,  'pidfile exists' );
+  # cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
+  # ok( $app->_delete_pid, '_delete_pid() return success' );
+  # ok( !-e $app->pidfile, 'pidfile does not exist' );
 
   # Test public methods
   my @modes = qw(
