@@ -106,11 +106,11 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->$sub } "$sub die when lockfile is not writeable";
   }
 
-  # chmod $rw_mode, $app->lockfile;
-  # unlink $app->lockfile;
+  chmod $rw_mode, $app->lockfile;
+  unlink $app->lockfile;
 
-  # # No filehandle for the lockfile exists
-  # dies_ok { $app->_unlock } '_unlock die the filehandle does not exist';
+  # No filehandle for the lockfile exists
+  dies_ok { $app->_unlock } '_unlock die the filehandle does not exist';
 }
 
 # {
