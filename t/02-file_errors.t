@@ -115,12 +115,10 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->$sub } "$sub die when no lockfile";
   }
 
-  ok( $app->run,          'xrun return true when not using lockfile' );
+  ok( $app->run,          'run return true when not using lockfile' );
   ok( !$app->_is_running, 'is_running return false when not using lockfile' );
   ok( $app->stop,         'stop return true when not using lockfile' );
 }
-
-
 
 # {
   # #
