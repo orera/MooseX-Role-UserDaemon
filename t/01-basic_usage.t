@@ -20,10 +20,10 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   with qw(MooseX::Role::UserDaemon);
 
   my $run = 1;
-  local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
-  local $SIG{'HUP'} = 'IGNORE';
-
   sub main {
+    local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    local $SIG{'HUP'} = 'IGNORE';
+    
     while ($run) { sleep 1; }
     return '0 but true';
   }
@@ -68,7 +68,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   my @modes = qw(
     status  start   start  status restart stop
     status  restart stop   stop   run     status
-    stop
+    reload  stop
   );
 
   my %mode_prints = (
@@ -85,6 +85,9 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
       qr{^Running with PID:\s\d+},
       qr{^Not running.},
       qr{^Running with PID:\s\d+},
+    ],
+    reload => [
+      qr{^PID: \d+, was signaled to reload\.},
     ],
     restart => [
       qr{^Stopping\sPID:\s\d+\.\.\.\nStarting\.\.\.},

@@ -430,7 +430,7 @@ BEGIN {
     my ($self) = @_;
 
     # Unable to signal process if no pidfile
-    return 0 if !$self->pidfile || $self->_is_running;
+    return 0 if !$self->pidfile || !$self->_is_running;
 
     # Get the process id
     my $pid = $self->_read_pid;
@@ -438,11 +438,11 @@ BEGIN {
     # Signal the process
     eval { kill 'HUP', $pid };
     if ($EVAL_ERROR) {
-      say "Failed to signal PID: $pid";
+      say "Failed to signal PID: $pid.";
       return 0;    # Return 0 to please both unit tests and exit
     }
 
-    say "PID: $pid, was signaled to reload";
+    say "PID: $pid, was signaled to reload.";
     return '0 but true';
   }
 
