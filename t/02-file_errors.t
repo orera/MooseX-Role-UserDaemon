@@ -14,58 +14,48 @@ use Test::Output;
 
 BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
-# {    # Minimal app
+{    # Minimal app
 
-  # package App;
+  package App;
 
-  # use Moose;
-  # with 'MooseX::Role::UserDaemon';
+  use Moose;
+  with 'MooseX::Role::UserDaemon';
 
-  # my $run = 1;
-  # local $SIG{'INT'} = sub { $run = 0; };
+  my $run = 1;
+  local $SIG{'INT'} = sub { $run = 0; };
 
-  # sub main {
-    # while ($run) {
-      # sleep 1;
-    # }
-    # exit;
-  # }
-# }
+  sub main {
+    while ($run) {
+      sleep 1;
+    }
+    exit;
+  }
+}
 
-# Readonly my $rw_mode => 0744;
-# Readonly my $ro_mode => 0444;
-# Readonly my $no_mode => 0000;
+Readonly my $rw_mode => 0744;
+Readonly my $ro_mode => 0444;
+Readonly my $no_mode => 0000;
 
-# {
-  # #
-  # # Missing lockfile tests
-  # #
+{
+  #
+  # Lockfile tests
+  #
 
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
-  # my $app = App->new( { lockfile => '' } );
-  # isa_ok( $app, 'App' );
+  my $app = App->new;
+  isa_ok( $app, 'App' );
 
-  # # Missing lockfile
-  # foreach my $sub (qw(_lock _unlock)) {
-    # dies_ok { $app->$sub } "$sub die when no lockfile";
-  # }
+  # Lockfile test
+  ok( !-e $app->lockfile, 'lockfile does not exists' );
+  ok( !$app->_is_running, '_is_running() return false' );
+  ok( $app->_lock,        '_lock() return success' );
+  ok( -e $app->lockfile,  'lockfile exists' );
+  ok( $app->_is_running,  '_is_running() return success' );
+  ok( $app->_unlock,      '_unlock() return success' );
 
-  # ok( !$app->_is_running, 'is_running return false when not using lockfile' );
-  # ok( $app->stop,         'stop return true when not using lockfile' );
-# }
 
-# {
-  # #
-  # # Lockfile tests
-  # #
-
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
-
-  # my $app = App->new;
-  # isa_ok( $app, 'App' );
 
   # unlink $app->lockfile
     # if -e $app->lockfile;
@@ -117,7 +107,29 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   # # No filehandle for the lockfile exists
   # dies_ok { $app->_unlock } '_unlock die the filehandle does not exist';
+}
+
+# {
+  # #
+  # # Missing lockfile tests
+  # #
+
+  # local $ENV{'HOME'} = File::Temp::tempdir;
+  # chdir $ENV{'HOME'};
+
+  # my $app = App->new( { lockfile => '' } );
+  # isa_ok( $app, 'App' );
+
+  # # Missing lockfile
+  # foreach my $sub (qw(_lock _unlock)) {
+    # dies_ok { $app->$sub } "$sub die when no lockfile";
+  # }
+
+  # ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  # ok( $app->stop,         'stop return true when not using lockfile' );
 # }
+
+
 
 # {
   # #
