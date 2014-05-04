@@ -61,22 +61,6 @@ Readonly my $no_mode => 0000;
   # Remove lockfile to reset the enviorment before continuing
   unlink $app->lockfile if -e $app->lockfile;
   
-  # unlink $app->lockfile
-    # if -e $app->lockfile;
-
-  # ok( !-e $app->lockfile, 'No lockfile exist before first lock' );
-
-  # my $lock_rc = $app->_lock;
-  # ok( -e $app->lockfile, 'Lockfile exist after locking' );
-  # ok( $lock_rc,          '_lock returned true on successful lock' );
-  # ok( $app->_unlock,     'unlock return true' );
-  # ok( -e $app->lockfile, 'Lockfile remains after unlocking' );
-  # ok( $app->_lock, 'Locking works when lockfile existed but was not locked' );
-  # ok( $app->_unlock, 'unlock return true' );
-
-  # unlink
-    # $app->lockfile;    # Remove lockfile so not to cause truble later in test.
-
   make_path( $app->lockfile );
 
   # Lockfile is a directory
@@ -98,6 +82,7 @@ Readonly my $no_mode => 0000;
   open $lockfile_fh, '>', $app->lockfile;
   close $lockfile_fh;
 
+  # Set permissions to read only
   chmod $ro_mode, $app->lockfile;
 
   # Lockfile is not writable by the current process
@@ -113,25 +98,25 @@ Readonly my $no_mode => 0000;
   dies_ok { $app->_unlock } '_unlock die the filehandle does not exist';
 }
 
-# {
-  # #
-  # # Missing lockfile tests
-  # #
+{
+  #
+  # Lockfile not used tests
+  #
 
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
-  # my $app = App->new( { lockfile => '' } );
-  # isa_ok( $app, 'App' );
+  my $app = App->new( { lockfile => '' } );
+  isa_ok( $app, 'App' );
 
-  # # Missing lockfile
-  # foreach my $sub (qw(_lock _unlock)) {
-    # dies_ok { $app->$sub } "$sub die when no lockfile";
-  # }
+  # Missing lockfile
+  foreach my $sub (qw(_lock _unlock)) {
+    dies_ok { $app->$sub } "$sub die when no lockfile";
+  }
 
-  # ok( !$app->_is_running, 'is_running return false when not using lockfile' );
-  # ok( $app->stop,         'stop return true when not using lockfile' );
-# }
+  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  ok( $app->stop,         'stop return true when not using lockfile' );
+}
 
 
 
