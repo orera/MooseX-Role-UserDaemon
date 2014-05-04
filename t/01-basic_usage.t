@@ -17,15 +17,14 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package App;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
+  with qw(MooseX::Role::UserDaemon);
 
   my $run = 1;
-  local $SIG{'INT'} = sub { $run = 0; };
+  local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+  local $SIG{'HUP'} = 'IGNORE';
 
   sub main {
-    while ($run) {
-      sleep 1;
-    }
+    while ($run) { sleep 1; }
     return '0 but true';
   }
 
