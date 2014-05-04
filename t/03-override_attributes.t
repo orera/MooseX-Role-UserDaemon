@@ -1,18 +1,18 @@
-# #!perl
+#!perl
 
-# use 5.014;
-# use strict;
-# use warnings;
-# use autodie;
-# use Data::Dumper qw(Dumper);
-# use English qw(-no_match_vars);
-# use File::Path qw(make_path);
-# use File::Temp qw();
-# use Readonly;
-# use Test::Most;
-# use Test::Output;
+use 5.014;
+use strict;
+use warnings;
+use autodie;
+use Data::Dumper qw(Dumper);
+use English qw(-no_match_vars);
+use File::Path qw(make_path);
+use File::Temp qw();
+use Readonly;
+use Test::Most;
+use Test::Output;
 
-# BEGIN { use_ok('MooseX::Role::UserDaemon'); }
+BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
 # {    # Minimal app
 
@@ -53,6 +53,6 @@
   # ok( $app->custom_command, 'custom command returns true' );
 # }
 
-# done_testing;
+done_testing;
 
-# __END__
+__END__

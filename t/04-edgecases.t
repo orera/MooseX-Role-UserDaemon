@@ -1,16 +1,16 @@
-# #!perl
+#!perl
 
-# use 5.014;
-# use strict;
-# use warnings;
-# use autodie;
-# use Data::Dumper qw(Dumper);
-# use English qw(-no_match_vars);
-# use File::Temp qw();
-# use Test::More;
-# use Test::Output;
+use 5.014;
+use strict;
+use warnings;
+use autodie;
+use Data::Dumper qw(Dumper);
+use English qw(-no_match_vars);
+use File::Temp qw();
+use Test::More;
+use Test::Output;
 
-# BEGIN { use_ok('MooseX::Role::UserDaemon'); }
+BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
 # {    # Minimal app
 
@@ -173,6 +173,6 @@
 # }
 
 
-# done_testing;
+done_testing;
 
-# __END__
+__END__
