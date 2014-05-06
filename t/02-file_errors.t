@@ -190,6 +190,10 @@ Readonly my $no_mode => 0000;
   foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
     dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
   }
+  
+  ok( $app->run,          'run return true when not using pidfile' );
+  #ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  ok( $app->stop,         'stop return true when not using pidfile' );
 }
 
 
