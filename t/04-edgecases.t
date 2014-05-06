@@ -32,58 +32,58 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   1;
 }
 
-{    # no pidfile used
-  local $ENV{'HOME'} = File::Temp::tempdir;
-  chdir $ENV{'HOME'};
-
-  my $app = App->new;
-
-  push @ARGV, 'invalid_command';
-  ok( !$app->run, 'run return false when command is invalid' );
-  @ARGV = ();
-}
-
-# {    # Invalid commands
+# {    # no pidfile used
   # local $ENV{'HOME'} = File::Temp::tempdir;
   # chdir $ENV{'HOME'};
 
-  # my @expected_output
-    # = ( qr/^Not running/, qr/^Process not running/, qr/^usage/, qr/^usage/ );
+  # my $app = App->new;
 
-  # foreach my $command (qw(status stop invalid_mode main)) {
-
-    # # Start with a fresh @ARGV
-    # @ARGV = ();
-
-    # # Populate with a command
-    # push @ARGV, $command;
-
-    # # Create application object
-    # my $app = App->new_with_options;
-
-    # # Keep data sendt to stdout here.
-    # my $stdout;
-
-    # # Redirect STDOUT to variable.
-    # open my $stdout_fh, '>', \$stdout;
-    # select($stdout_fh);
-
-    # # Return values
-    # my $mode_rc = $app->run;
-
-    # # Standard out contain the expected output
-    # like(
-      # $stdout,
-      # shift @expected_output,
-      # "standard out is correct for command: $command"
-    # );
-
-    # close $stdout_fh;
-
-    # # Back to regular STDOUT
-    # select(STDOUT);
-  # }
+  # push @ARGV, 'invalid_command';
+  # ok( !$app->run, 'run return false when command is invalid' );
+  # @ARGV = ();
 # }
+
+{    # Invalid commands
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
+
+  my @expected_output
+    = ( qr/^Not running/, qr/^Process not running/, qr/^usage/, qr/^usage/ );
+
+  foreach my $command (qw(status stop invalid_mode main)) {
+
+    # Start with a fresh @ARGV
+    @ARGV = ();
+
+    # Populate with a command
+    push @ARGV, $command;
+
+    # Create application object
+    my $app = App->new_with_options;
+
+    # Keep data sendt to stdout here.
+    my $stdout;
+
+    # Redirect STDOUT to variable.
+    open my $stdout_fh, '>', \$stdout;
+    select($stdout_fh);
+
+    # Return values
+    my $mode_rc = $app->run;
+
+    # Standard out contain the expected output
+    like(
+      $stdout,
+      shift @expected_output,
+      "standard out is correct for command: $command"
+    );
+
+    close $stdout_fh;
+
+    # Back to regular STDOUT
+    select(STDOUT);
+  }
+}
 
 # {    # Minimal app
   # package TimeoutApp;
