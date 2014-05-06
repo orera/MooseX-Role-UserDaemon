@@ -25,7 +25,9 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     my $run = 1;
     my $x   = 10;
 
-    local $SIG{'INT'} = sub { $run = 0; };
+    local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    local $SIG{'HUP'} = 'IGNORE';
+
     while ($run) { sleep 1; $x-- }
 
     exit;
