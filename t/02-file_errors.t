@@ -177,6 +177,9 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->$operation } "$operation die when pidfile does not exist";
   }
   
+  # Set the lockfile so that is_running return true
+  ok($app->_lock, 'Set the lockfile so that is_running return true');
+  
   # pidfile corrupt
   open my $pid_fh, '>', $app->pidfile;
   print {$pid_fh} '1234567890';
