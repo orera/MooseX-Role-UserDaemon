@@ -22,12 +22,24 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   sub main {
     my $run = 1;
+    my $x   = 10;
+
     local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
     local $SIG{'HUP'} = 'IGNORE';
 
-    while ($run) { sleep 1; }
+    while ($run) { sleep 1; $x-- }
+
     return '0 but true';
   }
+
+  # sub main {
+    # my $run = 1;
+    # local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    # local $SIG{'HUP'} = 'IGNORE';
+
+    # while ($run) { sleep 1; }
+    # return '0 but true';
+  # }
 
   1;
 }
