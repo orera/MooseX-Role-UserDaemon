@@ -176,6 +176,14 @@ Readonly my $no_mode => 0000;
   foreach my $operation (qw(_read_pid _delete_pid)) {
     dies_ok { $app->$operation } "$operation die when pidfile does not exist";
   }
+  
+  # pidfile corrupt
+  open my $pid_fh, '>', $app->pidfile;
+  print {$pid_fh} '1234567890';
+  close $pid_fh;
+  
+  ok( !$app->reload, 'reload return false, when is invalid' );
+  ok( !$app->stop,   'stop return false when pid is invalid' );
 }
 
 {

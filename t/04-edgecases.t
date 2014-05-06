@@ -60,8 +60,8 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   # print {$pid_fh} '1234567890';
   # close $pid_fh;
 
-  # ok( !$app->stop,   'stop return false when pid is invalid' );
   # ok( !$app->reload, 'reload return false, when is invalid' );
+  # ok( !$app->stop,   'stop return false when pid is invalid' );
 
   # $app->_unlock;
   # ok( !$app->reload, 'reload return false when there is no lockfile' );
