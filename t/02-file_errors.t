@@ -115,9 +115,9 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->$sub } "$sub die when no lockfile";
   }
 
-  #ok( $app->run,          'run return true when not using lockfile' );
-  #ok( !$app->_is_running, 'is_running return false when not using lockfile' );
-  #ok( $app->stop,         'stop return true when not using lockfile' );
+  ok( $app->run,          'run return true when not using lockfile' );
+  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  ok( $app->stop,         'stop return true when not using lockfile' );
 }
 
 {
@@ -159,12 +159,12 @@ Readonly my $no_mode => 0000;
     "$operation die when pidfile is not writable";
   }
 
-  # if ( $UID != 0 ) {
+  if ( $UID != 0 ) {
 
-    # # PID file is not readable
-    # chmod $no_mode, $app->pidfile;
-    # dies_ok { $app->_read_pid } '_read_pid die when pidfile is not readable';
-  # }
+    # PID file is not readable
+    chmod $no_mode, $app->pidfile;
+    dies_ok { $app->_read_pid } '_read_pid die when pidfile is not readable';
+  }
 
   # chmod $rw_mode, $app->pidfile;
   # unlink $app->pidfile;
