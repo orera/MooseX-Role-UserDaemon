@@ -166,13 +166,13 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->_read_pid } '_read_pid die when pidfile is not readable';
   }
 
-  # chmod $rw_mode, $app->pidfile;
-  # unlink $app->pidfile;
+  chmod $rw_mode, $app->pidfile;
+  unlink $app->pidfile;
 
-  # # PID file have been removed unexpectedly
-  # foreach my $operation (qw(_read_pid _delete_pid)) {
-    # dies_ok { $app->$operation } "$operation die when pidfile does not exist";
-  # }
+  # PID file have been removed unexpectedly
+  foreach my $operation (qw(_read_pid _delete_pid)) {
+    dies_ok { $app->$operation } "$operation die when pidfile does not exist";
+  }
 }
 
 # {
