@@ -12,26 +12,24 @@ use Test::Output;
 
 BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
-# {    # Minimal app
+{    # Minimal app
 
-  # package App;
+  package App;
 
-  # use Moose;
-  # with 'MooseX::Role::UserDaemon';
-  # with 'MooseX::Getopt';
+  use Moose;
+  with qw(MooseX::Role::UserDaemon);
+  with qw(MooseX::Getopt);
 
-  # my $run = 1;
-  # local $SIG{'INT'} = sub { $run = 0; };
+  sub main {
+    my $run = 1;
+    local $SIG{'INT'} = sub { $run = 0; };
 
-  # sub main {
-    # while ($run) {
-      # sleep 1;
-    # }
-    # return '0 but true';
-  # }
+    while ($run) { sleep 1; }
+    return '0 but true';
+  }
 
-  # 1;
-# }
+  1;
+}
 
 # {    # no pidfile used
   # local $ENV{'HOME'} = File::Temp::tempdir;
