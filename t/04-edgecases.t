@@ -81,15 +81,12 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package TimeoutApp;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
+  with qw(MooseX::Role::UserDaemon);
 
-  my $x = 5;
   sub main {
     local $SIG{'TERM'} = local $SIG{'INT'} = local $SIG{'HUP'} = 'IGNORE';
-    while ($x) {
-      sleep 1;
-      $x--;
-    }
+    my $x = 5;
+    while ($x) { sleep 1; $x--; }
     return '0 but true';
   }
 
@@ -116,7 +113,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package ForegroundApp;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
+  with qw(MooseX::Role::UserDaemon);
 
   sub main { '0 but true' }
 
@@ -130,7 +127,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   @ARGV = ();
 
   my $app = ForegroundApp->new({ foreground => 1, });
-
+  ok($app->stop, 'xxx');
   is($app->main, '0 but true', 'ForegroundApp returns zero but true');
 }
 
