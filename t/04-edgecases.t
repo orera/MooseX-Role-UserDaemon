@@ -43,30 +43,6 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   @ARGV = ();
 }
 
-{    # pidfile removed
-  local $ENV{'HOME'} = File::Temp::tempdir;
-  chdir $ENV{'HOME'};
-
-  my $app = App->new;
-
-  # Set the lockfile so that is_running returns true
-  $app->_lock;
-
-  ok( !$app->stop,   'stop return false when there are no pidfile' );
-  ok( !$app->reload, 'reload return false when there are no pidfile' );
-
-  # pidfile corrupt
-  open my $pid_fh, '>', $app->pidfile;
-  print {$pid_fh} '1234567890';
-  close $pid_fh;
-
-  ok( !$app->reload, 'reload return false, when is invalid' );
-  ok( !$app->stop,   'stop return false when pid is invalid' );
-
-  $app->_unlock;
-  ok( !$app->reload, 'reload return false when there is no lockfile' );
-}
-
 # {    # Invalid commands
   # local $ENV{'HOME'} = File::Temp::tempdir;
   # chdir $ENV{'HOME'};
