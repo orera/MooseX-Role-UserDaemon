@@ -175,22 +175,22 @@ Readonly my $no_mode => 0000;
   }
 }
 
-# {
-  # #
-  # # Missing pidfile tests
-  # #
+{
+  #
+  # Missing pidfile tests
+  #
 
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
-  # my $app = App->new( { pidfile => '' } );
-  # isa_ok( $app, 'App' );
+  my $app = App->new( { pidfile => '' } );
+  isa_ok( $app, 'App' );
 
-  # # PID file not specified
-  # foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
-    # dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
-  # }
-# }
+  # PID file not specified
+  foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
+    dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
+  }
+}
 
 
 done_testing;
