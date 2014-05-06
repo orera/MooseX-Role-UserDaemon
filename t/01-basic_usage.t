@@ -19,8 +19,8 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   use Moose;
   with qw(MooseX::Role::UserDaemon);
 
-  my $run = 1;
   sub main {
+    my $run = 1;
     local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
     local $SIG{'HUP'} = 'IGNORE';
     

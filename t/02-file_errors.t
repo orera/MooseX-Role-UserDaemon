@@ -26,7 +26,6 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     my $x   = 10;
 
     local $SIG{'INT'} = sub { $run = 0; };
-
     while ($run) { sleep 1; $x-- }
 
     exit;
@@ -97,6 +96,7 @@ Readonly my $no_mode => 0000;
 
   # No filehandle for the lockfile exists
   dies_ok { $app->_unlock } '_unlock die the filehandle does not exist';
+
 }
 
 {
@@ -115,38 +115,29 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->$sub } "$sub die when no lockfile";
   }
 
-  ok( $app->run,          'run return true when not using lockfile' );
-  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
-  ok( $app->stop,         'stop return true when not using lockfile' );
+  #ok( $app->run,          'run return true when not using lockfile' );
+  #ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  #ok( $app->stop,         'stop return true when not using lockfile' );
 }
 
-# {
-  # #
-  # # Missing pidfile tests
-  # #
+{
+  #
+  # Pidfile tests
+  #
 
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
-  # my $app = App->new( { pidfile => '' } );
-  # isa_ok( $app, 'App' );
+  my $app = App->new;
+  isa_ok( $app, 'App' );
 
-  # # PID file not specified
-  # foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
-    # dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
-  # }
-# }
-
-# {
-  # #
-  # # Pidfile tests
-  # #
-
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
-
-  # my $app = App->new;
-  # isa_ok( $app, 'App' );
+  # # Pidfile test
+  # ok( !-e $app->pidfile, 'pidfile does not exists' );
+  # ok( $app->_write_pid,  '_write_pid() return success' );
+  # ok( -e $app->pidfile,  'pidfile exists' );
+  # cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
+  # ok( $app->_delete_pid, '_delete_pid() return success' );
+  # ok( !-e $app->pidfile, 'pidfile does not exist' );
 
   # ok( !-e $app->pidfile, 'No PID file' );
 
@@ -191,7 +182,25 @@ Readonly my $no_mode => 0000;
   # foreach my $operation (qw(_read_pid _delete_pid)) {
     # dies_ok { $app->$operation } "$operation die when pidfile does not exist";
   # }
+}
+
+# {
+  # #
+  # # Missing pidfile tests
+  # #
+
+  # local $ENV{'HOME'} = File::Temp::tempdir;
+  # chdir $ENV{'HOME'};
+
+  # my $app = App->new( { pidfile => '' } );
+  # isa_ok( $app, 'App' );
+
+  # # PID file not specified
+  # foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
+    # dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
+  # }
 # }
+
 
 done_testing;
 
