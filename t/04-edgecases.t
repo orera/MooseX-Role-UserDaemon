@@ -22,7 +22,8 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   sub main {
     my $run = 1;
-    local $SIG{'INT'} = sub { $run = 0; };
+    local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    local $SIG{'HUP'} = 'IGNORE';
 
     while ($run) { sleep 1; }
     return '0 but true';
@@ -35,15 +36,11 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
 
-  my $app = App->new( { pidfile => '' } );
-  $app->_lock;
+  my $app = App->new;
 
-  ok( $app->_is_running, 'is running return true after locking' );
-  ok( !$app->stop,       'Stop return false, when there is no pidfile' );
-  ok( !$app->reload,     'Reload return false, when there is no pidfile' );
-
-  #push @ARGV, 'invalid_command';
-  #ok( !$app->run, 'run return false when command is invalid' );
+  push @ARGV, 'invalid_command';
+  ok( !$app->run, 'run return false when command is invalid' );
+  @ARGV = ();
 }
 
 # {    # pidfile removed
