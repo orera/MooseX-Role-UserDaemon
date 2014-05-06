@@ -42,8 +42,8 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   ok( !$app->stop,       'Stop return false, when there is no pidfile' );
   ok( !$app->reload,     'Reload return false, when there is no pidfile' );
 
-  push @ARGV, 'invalid_command';
-  ok( !$app->run, 'run return false when command is invalid' );
+  #push @ARGV, 'invalid_command';
+  #ok( !$app->run, 'run return false when command is invalid' );
 }
 
 # {    # pidfile removed
