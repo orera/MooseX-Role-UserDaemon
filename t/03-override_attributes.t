@@ -23,18 +23,13 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   has '+_valid_commands' => ( default => sub {qr/custom_command/xms}, );
 
-  sub custom_command {
-    my ($self) = @_;
-    return 1;
-  }
+  sub custom_command { return 1; }
 
   sub main {
     my $run = 1;
     local $SIG{'INT'} = sub { $run = 0; };
 
-    while ($run) {
-      sleep 1;
-    }
+    while ($run) { sleep 1; }
     exit;
   }
 }
