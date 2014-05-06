@@ -96,43 +96,43 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   1;
 }
 
-# {
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
+{
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
-  # @ARGV = ();
+  @ARGV = ();
 
-  # my $app = TimeoutApp->new({timeout => 3});
+  my $app = TimeoutApp->new({timeout => 3});
   
-  # ok($app->run, 'TimeoutApp starts ok');
-  # sleep 1;
-  # ok(-e $app->lockfile, 'TimeoutApp has created a lockfile');
-  # ok(-e $app->pidfile, 'TimeoutApp has created a pidfile');
+  ok($app->run, 'TimeoutApp starts ok');
+  sleep 1;
+  ok(-e $app->lockfile, 'TimeoutApp has created a lockfile');
+  ok(-e $app->pidfile, 'TimeoutApp has created a pidfile');
   
-  # ok(!$app->stop, 'TimeoutApp timeout while trying to stop, returning false');
-# }
+  ok(!$app->stop, 'TimeoutApp timeout while trying to stop, returning false');
+}
 
-# {    # Minimal app
-  # package ForegroundApp;
+{    # Minimal app
+  package ForegroundApp;
 
-  # use Moose;
-  # with 'MooseX::Role::UserDaemon';
+  use Moose;
+  with 'MooseX::Role::UserDaemon';
 
-  # sub main { '0 but true' }
+  sub main { '0 but true' }
 
-  # 1;
-# }
+  1;
+}
 
-# {
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
+{
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
 
-  # @ARGV = ();
+  @ARGV = ();
 
-  # my $app = ForegroundApp->new({ foreground => 1, });
+  my $app = ForegroundApp->new({ foreground => 1, });
 
-  # is($app->main, '0 but true', 'ForegroundApp returns zero but true');
-# }
+  is($app->main, '0 but true', 'ForegroundApp returns zero but true');
+}
 
 
 done_testing;
