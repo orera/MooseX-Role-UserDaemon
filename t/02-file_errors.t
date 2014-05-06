@@ -147,17 +147,17 @@ Readonly my $no_mode => 0000;
     dies_ok { $app->$operation } "$operation die when pidfile is a directory";
   }
 
-  # rmdir $app->pidfile;
+  rmdir $app->pidfile;
 
-  # # PID file is not writeable
-  # $app->_write_pid;
+  # PID file is not writeable
+  $app->_write_pid;
 
-  # foreach my $operation (qw(_write_pid _delete_pid)) {
-    # next if $UID == 0;
-    # chmod $ro_mode, $app->pidfile;
-    # dies_ok { $app->$operation }
-    # "$operation die when pidfile is not writable";
-  # }
+  foreach my $operation (qw(_write_pid _delete_pid)) {
+    next if $UID == 0;
+    chmod $ro_mode, $app->pidfile;
+    dies_ok { $app->$operation }
+    "$operation die when pidfile is not writable";
+  }
 
   # if ( $UID != 0 ) {
 
