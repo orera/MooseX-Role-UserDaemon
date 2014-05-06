@@ -134,27 +134,18 @@ Readonly my $no_mode => 0000;
   # Pidfile test
   ok( !-e $app->pidfile, 'pidfile does not exists' );
   ok( $app->_write_pid,  '_write_pid() return success' );
+  ok( $app->_write_pid, '_write_pid return true when file already exists' );
   ok( -e $app->pidfile,  'pidfile exists' );
   cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
   ok( $app->_delete_pid, '_delete_pid() return success' );
   ok( !-e $app->pidfile, 'pidfile does not exist' );
 
-  # ok( !-e $app->pidfile, 'No PID file' );
+  # PID file is not a file
+  make_path( $app->pidfile );
 
-  # my $write_pid_rc = $app->_write_pid;
-  # ok( -e $app->pidfile, 'PID file exist' );
-  # ok( $write_pid_rc,    '_write_pid returned true on success' );
-  # ok( $app->_write_pid, '_write_pid return true when file already exists' );
-
-  # $app->_delete_pid;
-  # ok( !-e $app->pidfile, 'PID file have been removed' );
-
-  # # PID file is not a file
-  # make_path( $app->pidfile );
-
-  # foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
-    # dies_ok { $app->$operation } "$operation die when pidfile is a directory";
-  # }
+  foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
+    dies_ok { $app->$operation } "$operation die when pidfile is a directory";
+  }
 
   # rmdir $app->pidfile;
 
