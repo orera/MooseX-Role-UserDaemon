@@ -32,28 +32,8 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     return '0 but true';
   }
 
-  # sub main {
-    # my $run = 1;
-    # local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
-    # local $SIG{'HUP'} = 'IGNORE';
-
-    # while ($run) { sleep 1; }
-    # return '0 but true';
-  # }
-
   1;
 }
-
-# {    # no pidfile used
-  # local $ENV{'HOME'} = File::Temp::tempdir;
-  # chdir $ENV{'HOME'};
-
-  # my $app = App->new;
-
-  # push @ARGV, 'invalid_command';
-  # ok( !$app->run, 'run return false when command is invalid' );
-  # @ARGV = ();
-# }
 
 {    # Invalid commands
   local $ENV{'HOME'} = File::Temp::tempdir;
@@ -97,25 +77,24 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   }
 }
 
-# {    # Minimal app
-  # package TimeoutApp;
+{    # Minimal app
+  package TimeoutApp;
 
-  # use Moose;
-  # with 'MooseX::Role::UserDaemon';
+  use Moose;
+  with 'MooseX::Role::UserDaemon';
 
-  # my $x = 5;
-  # sub main {
-    # local $SIG{'TERM'} = 'IGNORE';
-    # while ($x) {
-      # sleep 1;
-      # say $x;
-      # $x--;
-    # }
-    # return '0 but true';
-  # }
+  my $x = 5;
+  sub main {
+    local $SIG{'TERM'} = local $SIG{'INT'} = local $SIG{'HUP'} = 'IGNORE';
+    while ($x) {
+      sleep 1;
+      $x--;
+    }
+    return '0 but true';
+  }
 
-  # 1;
-# }
+  1;
+}
 
 # {
   # local $ENV{'HOME'} = File::Temp::tempdir;
