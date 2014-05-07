@@ -127,7 +127,6 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   @ARGV = ();
 
   my $app = ForegroundApp->new({ foreground => 1, });
-  ok($app->stop, 'xxx');
   is($app->main, '0 but true', 'ForegroundApp returns zero but true');
 }
 
