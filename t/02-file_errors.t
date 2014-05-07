@@ -187,6 +187,13 @@ Readonly my $no_mode => 0000;
   
   ok( !$app->reload, 'reload return false, when is invalid' );
   ok( !$app->stop,   'stop return false when pid is invalid' );
+  
+  # pidfile corrupt with non chars
+  open my $pid_fh, '>', $app->pidfile;
+  print {$pid_fh} 'abcdef';
+  close $pid_fh;
+  
+  dies_ok { $app->_read_pid } 'dies when pid contain non digits';
 }
 
 {
