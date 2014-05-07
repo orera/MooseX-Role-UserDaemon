@@ -189,7 +189,7 @@ Readonly my $no_mode => 0000;
   ok( !$app->stop,   'stop return false when pid is invalid' );
   
   # pidfile corrupt with non chars
-  open my $pid_fh, '>', $app->pidfile;
+  open $pid_fh, '>', $app->pidfile;
   print {$pid_fh} 'abcdef';
   close $pid_fh;
   
