@@ -193,7 +193,9 @@ Readonly my $no_mode => 0000;
   print {$pid_fh} 'abcdef';
   close $pid_fh;
   
-  dies_ok { $app->_read_pid } 'dies when pid contain non digits';
+  dies_ok { $app->_read_pid } '_read_pid dies when pid contain non digits';
+  dies_ok { $app->stop      } 'stop dies when pid contain non digits';
+  dies_ok { $app->restart   } 'restart dies when pid contain non digits';
 }
 
 {
