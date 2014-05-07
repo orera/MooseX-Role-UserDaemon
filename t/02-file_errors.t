@@ -140,7 +140,6 @@ Readonly my $no_mode => 0000;
   ok( $app->_write_pid,  '_write_pid return true when file already exists' );
   ok( -e $app->pidfile,  'pidfile exists' );
   cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
-  ok( $app->stop );
   ok( $app->_delete_pid, '_delete_pid() return success' );
   ok( !-e $app->pidfile, 'pidfile does not exist' );
 

@@ -115,7 +115,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   use Moose;
   with qw(MooseX::Role::UserDaemon);
 
-  sub main { '0 but true' }
+  sub main { return '0 but true'; }
 
   1;
 }
@@ -127,7 +127,17 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   @ARGV = ();
 
   my $app = ForegroundApp->new({ foreground => 1, });
+
+  # Test return value of main, inforground mode we should return not exit
   is($app->main, '0 but true', 'ForegroundApp returns zero but true');
+
+  # Here we can also test stop for failure
+  # lock so that the app appears to be running
+  ok( $app->_lock,      '_lock OK');
+  
+  # Call stop without having written a pidfile
+  ok( !$app->stop, 'stop return false'  );
+  ok( $app->_unlock, '_unlock OK');
 }
 
 
