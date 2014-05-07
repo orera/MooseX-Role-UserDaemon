@@ -136,7 +136,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   ok( $app->_lock, '_lock OK' );
   
   # Call stop without having written a pidfile
-  #ok( !$app->stop,    'stop return false' );
+  ok( !$app->stop,    'stop return false' );
   ok( !$app->restart, 'restart return false' );
   ok( $app->_unlock,  '_unlock OK' );
 }
