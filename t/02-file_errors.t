@@ -19,15 +19,17 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package App;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
-
-  my $run = 1;
-  local $SIG{'INT'} = sub { $run = 0; };
+  with qw(MooseX::Role::UserDaemon);
 
   sub main {
-    while ($run) {
-      sleep 1;
-    }
+    my $run = 1;
+    my $x   = 10;
+
+    local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    local $SIG{'HUP'} = 'IGNORE';
+
+    while ($run) { sleep 1; $x-- }
+
     exit;
   }
 }
@@ -35,26 +37,6 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 Readonly my $rw_mode => 0744;
 Readonly my $ro_mode => 0444;
 Readonly my $no_mode => 0000;
-
-{
-  #
-  # Missing lockfile tests
-  #
-
-  local $ENV{'HOME'} = File::Temp::tempdir;
-  chdir $ENV{'HOME'};
-
-  my $app = App->new( { lockfile => '' } );
-  isa_ok( $app, 'App' );
-
-  # Missing lockfile
-  foreach my $sub (qw(_lock _unlock)) {
-    dies_ok { $app->$sub } "$sub die when no lockfile";
-  }
-
-  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
-  ok( $app->stop,         'stop return true when not using lockfile' );
-}
 
 {
   #
@@ -67,22 +49,20 @@ Readonly my $no_mode => 0000;
   my $app = App->new;
   isa_ok( $app, 'App' );
 
-  unlink $app->lockfile
-    if -e $app->lockfile;
-
-  ok( !-e $app->lockfile, 'No lockfile exist before first lock' );
-
-  my $lock_rc = $app->_lock;
-  ok( -e $app->lockfile, 'Lockfile exist after locking' );
-  ok( $lock_rc,          '_lock returned true on successful lock' );
-  ok( $app->_unlock,     'unlock return true' );
+  # Lockfile test
+  ok( !-e $app->lockfile, 'lockfile does not exists' );
+  ok( !$app->_is_running, '_is_running() return false' );
+  ok( $app->_lock,        '_lock() return success' );
+  ok( -e $app->lockfile,  'lockfile exists' );
+  ok( $app->_is_running,  '_is_running() return success' );
+  ok( $app->_unlock,      '_unlock() return success' );
   ok( -e $app->lockfile, 'Lockfile remains after unlocking' );
   ok( $app->_lock, 'Locking works when lockfile existed but was not locked' );
   ok( $app->_unlock, 'unlock return true' );
 
-  unlink
-    $app->lockfile;    # Remove lockfile so not to cause truble later in test.
-
+  # Remove lockfile to reset the enviorment before continuing
+  unlink $app->lockfile if -e $app->lockfile;
+  
   make_path( $app->lockfile );
 
   # Lockfile is a directory
@@ -104,9 +84,10 @@ Readonly my $no_mode => 0000;
   open $lockfile_fh, '>', $app->lockfile;
   close $lockfile_fh;
 
+  # Set permissions to read only
   chmod $ro_mode, $app->lockfile;
 
-  # Lockfile contains data
+  # Lockfile is not writable by the current process
   foreach my $sub (qw(_lock _unlock)) {
     next if $UID == 0;
     dies_ok { $app->$sub } "$sub die when lockfile is not writeable";
@@ -117,23 +98,29 @@ Readonly my $no_mode => 0000;
 
   # No filehandle for the lockfile exists
   dies_ok { $app->_unlock } '_unlock die the filehandle does not exist';
+
 }
 
 {
   #
-  # Missing pidfile tests
+  # Lockfile not used tests
   #
 
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
 
-  my $app = App->new( { pidfile => '' } );
+  my $app = App->new( { lockfile => '' } );
   isa_ok( $app, 'App' );
 
-  # PID file not specified
-  foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
-    dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
+  # Missing lockfile
+  foreach my $sub (qw(_lock _unlock)) {
+    dies_ok { $app->$sub } "$sub die when no lockfile";
   }
+
+  ok( $app->run,          'run return true when not using lockfile' );
+  sleep 1;
+  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  ok( $app->stop,         'stop return true when not using lockfile' );
 }
 
 {
@@ -147,15 +134,14 @@ Readonly my $no_mode => 0000;
   my $app = App->new;
   isa_ok( $app, 'App' );
 
-  ok( !-e $app->pidfile, 'No PID file' );
-
-  my $write_pid_rc = $app->_write_pid;
-  ok( -e $app->pidfile, 'PID file exist' );
-  ok( $write_pid_rc,    '_write_pid returned true on success' );
-  ok( $app->_write_pid, '_write_pid return true when file already exists' );
-
-  $app->_delete_pid;
-  ok( !-e $app->pidfile, 'PID file have been removed' );
+  # Pidfile test
+  ok( !-e $app->pidfile, 'pidfile does not exists' );
+  ok( $app->_write_pid,  '_write_pid() return success' );
+  ok( $app->_write_pid,  '_write_pid return true when file already exists' );
+  ok( -e $app->pidfile,  'pidfile exists' );
+  cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
+  ok( $app->_delete_pid, '_delete_pid() return success' );
+  ok( !-e $app->pidfile, 'pidfile does not exist' );
 
   # PID file is not a file
   make_path( $app->pidfile );
@@ -190,7 +176,51 @@ Readonly my $no_mode => 0000;
   foreach my $operation (qw(_read_pid _delete_pid)) {
     dies_ok { $app->$operation } "$operation die when pidfile does not exist";
   }
+  
+  # Set the lockfile so that is_running return true
+  ok($app->_lock, 'Set the lockfile so that is_running return true');
+  
+  # pidfile corrupt
+  open my $pid_fh, '>', $app->pidfile;
+  print {$pid_fh} '1234567890';
+  close $pid_fh;
+  
+  ok( !$app->reload, 'reload return false, when is invalid' );
+  ok( !$app->stop,   'stop return false when pid is invalid' );
+  
+  # pidfile corrupt with non chars
+  open $pid_fh, '>', $app->pidfile;
+  print {$pid_fh} 'abcdef';
+  close $pid_fh;
+  
+  dies_ok { $app->_read_pid } '_read_pid dies when pid contain non digits';
+  dies_ok { $app->stop      } 'stop dies when pid contain non digits';
+  dies_ok { $app->restart   } 'restart dies when pid contain non digits';
 }
+
+{
+  #
+  # Missing pidfile tests
+  #
+
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
+
+  my $app = App->new( { pidfile => '' } );
+  isa_ok( $app, 'App' );
+
+  # PID file not specified
+  foreach my $operation (qw(_write_pid _read_pid _delete_pid)) {
+    dies_ok { $app->$operation } "$operation die when pidfile is unspecified";
+  }
+  
+  ok( $app->run,          'run return true when not using pidfile' );
+  sleep 1;
+  ok( !$app->_is_running, 'is_running return false when not using lockfile' );
+  ok( !$app->reload,      'reload return false, when there is no pidfile' );
+  ok( $app->stop,         'stop return true when not using pidfile' );
+}
+
 
 done_testing;
 

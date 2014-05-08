@@ -5,3 +5,5 @@ Makefile*
 MooseX-*
 META*
 MYMETA*
+README.pod
+.build*

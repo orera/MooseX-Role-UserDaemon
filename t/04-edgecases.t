@@ -17,59 +17,22 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package App;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
-  with 'MooseX::Getopt';
-
-  my $run = 1;
-  local $SIG{'INT'} = sub { $run = 0; };
+  with qw(MooseX::Role::UserDaemon);
+  with qw(MooseX::Getopt);
 
   sub main {
-    while ($run) {
-      sleep 1;
-    }
+    my $run = 1;
+    my $x   = 10;
+
+    local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    local $SIG{'HUP'} = 'IGNORE';
+
+    while ($run) { sleep 1; $x-- }
+
     return '0 but true';
   }
 
   1;
-}
-
-{    # no pidfile used
-  local $ENV{'HOME'} = File::Temp::tempdir;
-  chdir $ENV{'HOME'};
-
-  my $app = App->new( { pidfile => '' } );
-  $app->_lock;
-
-  ok( $app->_is_running, 'is running return true after locking' );
-  ok( !$app->stop,       'Stop return false, when there is no pidfile' );
-  ok( !$app->reload,     'Reload return false, when there is no pidfile' );
-
-  push @ARGV, 'invalid_command';
-  ok( !$app->run, 'run return false when command is invalid' );
-}
-
-{    # pidfile removed
-  local $ENV{'HOME'} = File::Temp::tempdir;
-  chdir $ENV{'HOME'};
-
-  my $app = App->new;
-
-  # Set the lockfile so that is_running returns true
-  $app->_lock;
-
-  ok( !$app->stop,   'stop return false when there are no pidfile' );
-  ok( !$app->reload, 'reload return false when there are no pidfile' );
-
-  # pidfile corrupt
-  open my $pid_fh, '>', $app->pidfile;
-  print {$pid_fh} '1234567890';
-  close $pid_fh;
-
-  ok( !$app->stop,   'stop return false when pid is invalid' );
-  ok( !$app->reload, 'reload return false, when is invalid' );
-
-  $app->_unlock;
-  ok( !$app->reload, 'reload return false when there is no lockfile' );
 }
 
 {    # Invalid commands
@@ -118,16 +81,12 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package TimeoutApp;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
+  with qw(MooseX::Role::UserDaemon);
 
-  my $x = 5;
   sub main {
-    local $SIG{'TERM'} = 'IGNORE';
-    while ($x) {
-      sleep 1;
-      say $x;
-      $x--;
-    }
+    local $SIG{'TERM'} = local $SIG{'INT'} = local $SIG{'HUP'} = 'IGNORE';
+    my $x = 5;
+    while ($x) { sleep 1; $x--; }
     return '0 but true';
   }
 
@@ -154,9 +113,9 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package ForegroundApp;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
+  with qw(MooseX::Role::UserDaemon);
 
-  sub main { '0 but true' }
+  sub main { return '0 but true'; }
 
   1;
 }
@@ -169,7 +128,30 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   my $app = ForegroundApp->new({ foreground => 1, });
 
-  is($app->main, '0 but true', 'ForegroundApp returns zero but true');
+  # basedir is a file
+  open my $fh, '>', $app->basedir;
+  print {$fh} 'content';
+  close $fh;
+
+  is( $app->run, 0, 'run should fail when basedir is a file' );
+
+  # Remove basedir file so that we can continue as normal
+  unlink $app->basedir;
+
+  # Test return value of main, in forground mode we should return not exit
+  is( $app->main, '0 but true', 'ForegroundApp returns zero but true' );
+
+  # Test run in foreground mode
+  is( $app->run,  '0 but true', 'Return zero but true from run as well' );
+
+  # Here we can also test stop for failure
+  # lock so that the app appears to be running
+  ok( $app->_lock, '_lock OK' );
+  
+  # Call stop without having written a pidfile
+  ok( !$app->stop,    'stop return false' );
+  ok( !$app->restart, 'restart return false' );
+  ok( $app->_unlock,  '_unlock OK' );
 }
 
 
