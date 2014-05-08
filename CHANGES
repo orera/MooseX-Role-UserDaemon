@@ -3,8 +3,14 @@ Changes from 2013-05-08 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-05-08 22:10:24 +0000
+version 0.05 at 2014-05-08 22:27:38 +0000
 -----------------------------------------
+
+  Change: 2697b3934ff2e82ce55c331afae63074bb0e2ef4
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-05-09 00:26:00 +0000
+
+    Reworked unit tests, improved coverage 
 
   Change: 1db5f0ae784d4430e64895bb7879a8210ec6adc6
   Author: Tore Andersson <tore.andersson@gmail.com>
