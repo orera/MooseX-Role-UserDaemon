@@ -26,7 +26,7 @@ In your module:
     # to allow for graceful shutdown of the app.
     # In addition the HUP signal should be caught and used for config reload.
     my $run = 1;
-    local $SIG{'INT'} = sub { $run = 0; };
+    local $SIG{'TERM'} = local $SIG{'INT'} = sub { $run = 0; };
 
     FOREVER_LOOP:
     while ($run) {
@@ -85,7 +85,7 @@ In your module:
 
     # the user have to implement capturing signals and exiting.
     my $run = 1;
-    local $SIG{'INT'} = sub { $run = 0; };
+    local $SIG{'TERM'} = local $SIG{'INT'} = sub { $run = 0; };
 
     FOREVER_LOOP:
     while ($run) {
@@ -153,7 +153,7 @@ Will launch the application according to the description above.
 
 =head2 stop
 
-Will read the pid from the pidfile and issue a C<< INT >> signal.
+Will read the pid from the pidfile and issue a C<< TERM >> signal.
 
 =head2 restart
 
@@ -183,13 +183,13 @@ String. Defaults to script name, is used for setting a application folder name.
 
 =head2 _valid_commands
 
-Regexp. Default is C<< qr/status|start|stop|reload|restart/xms >>. Whitelist 
-methods which can be called from the command line.
+Regexp. Default is C<< qr/\A(status|start|stop|reload|restart)\z/xms >>.
+Whitelist methods which can be called from the command line.
 
 =head2 timeout
 
 Integer. Default is 5. How much time in seconds it's expected to take after
-shutting down the app by sending a C<< INT >> singal. This is used by
+shutting down the app by sending a C<< TERM >> singal. This is used by
 C<< stop >> to avoid waiting forever for the app to shut down.
 
 =head2 foreground
@@ -227,14 +227,14 @@ New commands can be added by the consuming class, it which case the
 attribute C<< _valid_commands >> needs to be updated for C<< run() >>
 to allow the command to be executed. C<< _valid_commands >> is a
 RegexpRef and the default value is:
-C<< qr/status|start|stop|reload|restart/ >>
+C<< qr/\A(status|start|stop|reload|restart)\z/ >>
 
 You can set your own C<< _valid_commands >> in the consuming class, to allow 
 for custom commands like this:
 
   has '+_valid_commands' => (
     default => sub {
-      return qr/status|start|stop|restart|custom_command/xms
+      return qr/\A(status|start|stop|restart|custom_command)\z/xms
     },
   );
 
@@ -249,7 +249,7 @@ and after forking (unless foreground mode is enabled).
 
 =head2 stop
 
-C<< stop() >> issues a C<< INT >> signal to the PID listed in the pidfile. It
+C<< stop() >> issues a C<< TERM >> signal to the PID listed in the pidfile. It
 is up to the author to trap this signal and end the application in an
 orderly fashion.
 
