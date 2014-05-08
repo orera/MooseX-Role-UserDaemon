@@ -19,22 +19,17 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package App;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
+  with qw(MooseX::Role::UserDaemon);
 
   has '+_valid_commands' => ( default => sub {qr/custom_command/xms}, );
 
-  sub custom_command {
-    my ($self) = @_;
-    return 1;
-  }
-
-  my $run = 1;
-  local $SIG{'INT'} = sub { $run = 0; };
+  sub custom_command { return 1; }
 
   sub main {
-    while ($run) {
-      sleep 1;
-    }
+    my $run = 1;
+    local $SIG{'INT'} = sub { $run = 0; };
+
+    while ($run) { sleep 1; }
     exit;
   }
 }

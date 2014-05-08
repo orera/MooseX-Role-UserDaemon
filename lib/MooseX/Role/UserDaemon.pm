@@ -119,12 +119,14 @@ BEGIN {
     return if !$self->pidfile;
 
     # Failed to write pid
-    return 5 if !$self->_write_pid;
+    return 0 if !$self->_write_pid;
 
-    $self->$orig;
+    my $rc = $self->$orig;
 
     # Failed to remove pidfile after execution
-    return 6 if !$self->_delete_pid;
+    return 0 if !$self->_delete_pid;
+
+    return $rc;
   };
 
   # Write lock file if supplied
@@ -135,13 +137,15 @@ BEGIN {
     return if !$self->lockfile;
 
     # Failed to establish a lock
-    return 4 if !$self->_lock;
+    return 0 if !$self->_lock;
 
     # run main
-    $self->$orig;
+    my $rc = $self->$orig;
 
     # Failed to remove lock
-    return 7 if !$self->_unlock;
+    return 0 if !$self->_unlock;
+
+    return $rc;
   };
 
   sub _init_fh {
@@ -161,14 +165,20 @@ BEGIN {
   sub _lockfile_is_valid {
     my ($self) = @_;
 
-    die 'lockfile is not a regular file.'
-      if !-f $self->lockfile;
+    if ( !-f $self->lockfile ) {
+      warn 'lockfile is not a regular file.';
+      return;
+    }
 
-    die 'lockfile is not a empty file.'
-      if !-z $self->lockfile;
+    if ( !-z $self->lockfile ) {
+      warn 'lockfile is not a empty file.';
+      return;
+    }
 
-    die 'lockfile is not writeable by the current process.'
-      if !-w $self->lockfile;
+    if ( !-w $self->lockfile ) {
+      warn 'lockfile is not writeable by the current process.';
+      return;
+    }
 
     return 1;
   }
@@ -176,7 +186,7 @@ BEGIN {
   sub _lock {
     my ($self) = @_;
 
-    die 'Must specify a path to be used as a lock file.'
+    die 'Must specify a path to be used as a lockfile.'
       if !$self->lockfile;
 
     die 'A lockfile already exists but it is not an empty writable file.'
@@ -210,6 +220,27 @@ BEGIN {
     return $close_rc;
   }
 
+  sub _pidfile_is_valid {
+    my ($self) = @_;
+
+    if ( !-f $self->pidfile ) {
+      warn 'pidfile is not a file';
+      return;
+    }
+
+    if ( !-r $self->pidfile ) {
+      warn 'pidfile is not readable';
+      return;
+    }
+
+    if ( !-w $self->pidfile ) {
+      warn 'pidfile is not writeable';
+      return;
+    }
+
+    return 1;
+  }
+
   sub _write_pid {
     my ($self) = @_;
 
@@ -217,7 +248,7 @@ BEGIN {
       if !$self->pidfile;
 
     die 'A pidfile already exist, but is not a regular writable file.'
-      if -e $self->pidfile && ( !-f $self->pidfile || !-w $self->pidfile );
+      if -e $self->pidfile && !$self->_pidfile_is_valid;
 
     # write the actual file
     {
@@ -239,11 +270,8 @@ BEGIN {
     die 'Must specify a path to be used as a pidfile.'
       if !$self->pidfile;
 
-    die 'pidfile does not exist.'
-      if !-e $self->pidfile;
-
-    die 'pidfile is not a regular file or is not readable.'
-      if !-f $self->pidfile || !-r $self->pidfile;
+    die 'A pidfile already exist, but is not a regular file.'
+      if -e $self->pidfile && !$self->_pidfile_is_valid;
 
     open my $pid_fh, '<', $self->pidfile;
     my $daemon_pid = do { local $INPUT_RECORD_SEPARATOR = undef; <$pid_fh> };
@@ -328,14 +356,18 @@ BEGIN {
 
     say 'Starting...';
 
-    # Do the fork, unless foreground mode is enabled
-    if ( !$self->foreground ) {
-      my $daemonize_rc = $self->_daemonize;
-      return $daemonize_rc if defined $daemonize_rc; # Original parent returns
-    }
+    # Return with output of main if foreground mode is enabled
+    return $self->main
+      if $self->foreground;
 
-    # Child will run main
-    return $self->main;
+    # Else Daemonize
+    my $daemonize_rc = $self->_daemonize;
+
+    # Original parent returns
+    return $daemonize_rc if defined $daemonize_rc;
+
+    # Child will run main and exit when running as daemon
+    exit $self->main;
   }
 
   sub stop {
@@ -354,38 +386,31 @@ BEGIN {
     # Get process id
     my $pid = $self->_read_pid;
 
-    say "Stopping PID: $pid...";
-    kill 0, $pid and kill 'INT', $pid or do {
+    eval { kill 'TERM', $pid };
+    if ($EVAL_ERROR) {
       warn 'Not able to issue kill signal.';
-      return 8;
+      return 0;
+    }
+    else {
+      say "Stopping PID: $pid...";
+    }
+
+    eval {
+      local $SIG{'ALRM'} = sub { die "Timed out waiting for exit\n"; };
+
+      my $lockfile_fh = $self->_init_fh( '+<', $self->lockfile );
+      if ( !flock( $lockfile_fh, LOCK_EX | LOCK_NB ) ) {
+
+        #say "Lockfile still blocked, waiting\n";
+        alarm $self->timeout;
+        flock( $lockfile_fh, LOCK_EX );
+        alarm 0;
+      }
+      close $lockfile_fh;
     };
-
-    # Return if no lockfile, can't determine when stop has completed anyway
-    return '0 but true' if !$self->lockfile;
-
-    # Set to 1 if we time out waiting for the process to stop;
-    my $timeout_rc;
-
-    # Timeout signal handler
-    local $SIG{'ALRM'} = sub {
-      $timeout_rc = 1;
-      say 'Timed out waiting for process to exit.';
-    };
-
-    # Start timer and open filehandle
-    alarm $self->timeout;
-    my $lockfile_fh = $self->_init_fh( '>>', $self->lockfile );
-
-    # Lock the lockfile
-    flock $lockfile_fh, LOCK_EX;
-
-    # Abort timeout if lock is attained before the timeout period.
-    alarm 0;
-    close $lockfile_fh;
-
-    return $timeout_rc
-      ? 0             # Timed out
-      :'0 but true';  # Successful shutdown
+    return $EVAL_ERROR
+      ? 0
+      : '0 but true';
   }
 
   sub restart {
@@ -404,27 +429,21 @@ BEGIN {
   sub reload {
     my ($self) = @_;
 
-    if ( $self->_is_running && $self->pidfile ) {
+    # Unable to signal process if no pidfile
+    return 0 if !$self->pidfile || !$self->_is_running;
 
-      # Get the process id
-      my $pid = $self->_read_pid;
+    # Get the process id
+    my $pid = $self->_read_pid;
 
-      # Signal the process
-      my $rc = kill 'HUP', $pid;
-      if ($rc) {
-        say "PID: $pid, was signaled to reload";
-        return '0 but true';
-      }
-      else {
-        say "Failed to signal PID: $pid";
-        return 0;    # Return 0 to please both unit tests and exit
-      }
+    # Signal the process
+    my $kill_rc = eval { kill 'HUP', $pid };
+    if ($EVAL_ERROR || !$kill_rc) {
+      say "Failed to signal PID: $pid.";
+      return 0;    # Return 0 to please both unit tests and exit
     }
 
-    say 'Could not find a process to signal.';
-
-    # Return 0 to please both unit tests and exit
-    return 0;
+    say "PID: $pid, was signaled to reload.";
+    return '0 but true';
   }
 
   sub run {
@@ -441,18 +460,25 @@ BEGIN {
 
     # Validate that mode is valid/approved
     ($command) = $command =~ $self->_valid_commands or do {
-      say $self->can('usage') && $self->usage->can('text')
+      say $self->can('usage')
+        && ref( $self->usage )
+        && $self->usage->can('text')
         ? $self->usage->text              # If MooseX::Getopt is in use
         : 'The command is not valid.';    # else default to a simple message
-      return 9;
+      return 0;
     };
 
     # Create base dir if none exists.
-    return 1
-      if !-e $self->basedir && !File::Path::make_path( $self->basedir );
+    if ( !-e $self->basedir && !File::Path::make_path( $self->basedir ) ) {
+      say 'Failed to create basedir.';
+      return 0;
+    }
 
     # Change to running dir, fail if base dir is not a directory
-    return 2 if !-d $self->basedir || !chdir $self->basedir;
+    if ( !-d $self->basedir || !chdir $self->basedir ) {
+      say 'Failed to enter basedir.';
+      return 0;
+    }
 
     # Run!
     return $self->$command;
@@ -492,7 +518,7 @@ In your module:
     # to allow for graceful shutdown of the app.
     # In addition the HUP signal should be caught and used for config reload.
     my $run = 1;
-    local $SIG{'INT'} = sub { $run = 0; };
+    local $SIG{'TERM'} = local $SIG{'INT'} = sub { $run = 0; };
 
     FOREVER_LOOP:
     while ($run) {
@@ -551,7 +577,7 @@ In your module:
 
     # the user have to implement capturing signals and exiting.
     my $run = 1;
-    local $SIG{'INT'} = sub { $run = 0; };
+    local $SIG{'TERM'} = local $SIG{'INT'} = sub { $run = 0; };
 
     FOREVER_LOOP:
     while ($run) {
@@ -619,7 +645,7 @@ Will launch the application according to the description above.
 
 =head2 stop
 
-Will read the pid from the pidfile and issue a C<< INT >> signal.
+Will read the pid from the pidfile and issue a C<< TERM >> signal.
 
 =head2 restart
 
@@ -633,6 +659,14 @@ Will read the pid from the pidfile and issue a C<< HUP >> signal.
 
 Will read the pid from the pidfile and print to STDOUT.
 
+=head1 NAME
+
+MooseX::Role::UserDaemon - Simplify writing of user space daemons
+
+=head1 VERSION
+
+version 0.05
+
 =head1 ATTRIBUTES
 
 =head2 _name
@@ -641,13 +675,13 @@ String. Defaults to script name, is used for setting a application folder name.
 
 =head2 _valid_commands
 
-Regexp. Default is C<< qr/status|start|stop|reload|restart/xms >>. Whitelist 
-methods which can be called from the command line.
+Regexp. Default is C<< qr/\A(status|start|stop|reload|restart)\z/xms >>.
+Whitelist methods which can be called from the command line.
 
 =head2 timeout
 
 Integer. Default is 5. How much time in seconds it's expected to take after
-shutting down the app by sending a C<< INT >> singal. This is used by
+shutting down the app by sending a C<< TERM >> singal. This is used by
 C<< stop >> to avoid waiting forever for the app to shut down.
 
 =head2 foreground
@@ -685,14 +719,14 @@ New commands can be added by the consuming class, it which case the
 attribute C<< _valid_commands >> needs to be updated for C<< run() >>
 to allow the command to be executed. C<< _valid_commands >> is a
 RegexpRef and the default value is:
-C<< qr/status|start|stop|reload|restart/ >>
+C<< qr/\A(status|start|stop|reload|restart)\z/ >>
 
 You can set your own C<< _valid_commands >> in the consuming class, to allow 
 for custom commands like this:
 
   has '+_valid_commands' => (
     default => sub {
-      return qr/status|start|stop|restart|custom_command/xms
+      return qr/\A(status|start|stop|restart|custom_command)\z/xms
     },
   );
 
@@ -707,7 +741,7 @@ and after forking (unless foreground mode is enabled).
 
 =head2 stop
 
-C<< stop() >> issues a C<< INT >> signal to the PID listed in the pidfile. It
+C<< stop() >> issues a C<< TERM >> signal to the PID listed in the pidfile. It
 is up to the author to trap this signal and end the application in an
 orderly fashion.
 
@@ -725,6 +759,17 @@ thing, usualy to reload configuration files.
 =for Pod::Coverage LOCK_EX
 
 =for Pod::Coverage LOCK_NB
+
+=head1 AUTHOR
+
+Tore Andersson <tore.andersson@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2014 by Tore Andersson.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =head1 AUTHOR
 

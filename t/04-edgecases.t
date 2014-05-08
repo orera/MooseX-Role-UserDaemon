@@ -17,23 +17,25 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   package App;
 
   use Moose;
-  with 'MooseX::Role::UserDaemon';
-  with 'MooseX::Getopt';
-
-  my $run = 1;
-  local $SIG{'INT'} = sub { $run = 0; };
+  with qw(MooseX::Role::UserDaemon);
+  with qw(MooseX::Getopt);
 
   sub main {
-    while ($run) {
-      sleep 1;
-    }
+    my $run = 1;
+    my $x   = 10;
+
+    local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
+    local $SIG{'HUP'} = 'IGNORE';
+
+    while ($run) { sleep 1; $x-- }
+
     return '0 but true';
   }
 
   1;
 }
 
-{
+{    # Invalid commands
   local $ENV{'HOME'} = File::Temp::tempdir;
   chdir $ENV{'HOME'};
 
@@ -74,6 +76,84 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     select(STDOUT);
   }
 }
+
+{    # Minimal app
+  package TimeoutApp;
+
+  use Moose;
+  with qw(MooseX::Role::UserDaemon);
+
+  sub main {
+    local $SIG{'TERM'} = local $SIG{'INT'} = local $SIG{'HUP'} = 'IGNORE';
+    my $x = 5;
+    while ($x) { sleep 1; $x--; }
+    return '0 but true';
+  }
+
+  1;
+}
+
+{
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
+
+  @ARGV = ();
+
+  my $app = TimeoutApp->new({timeout => 3});
+  
+  ok($app->run, 'TimeoutApp starts ok');
+  sleep 1;
+  ok(-e $app->lockfile, 'TimeoutApp has created a lockfile');
+  ok(-e $app->pidfile, 'TimeoutApp has created a pidfile');
+  
+  ok(!$app->stop, 'TimeoutApp timeout while trying to stop, returning false');
+}
+
+{    # Minimal app
+  package ForegroundApp;
+
+  use Moose;
+  with qw(MooseX::Role::UserDaemon);
+
+  sub main { return '0 but true'; }
+
+  1;
+}
+
+{
+  local $ENV{'HOME'} = File::Temp::tempdir;
+  chdir $ENV{'HOME'};
+
+  @ARGV = ();
+
+  my $app = ForegroundApp->new({ foreground => 1, });
+
+  # basedir is a file
+  open my $fh, '>', $app->basedir;
+  print {$fh} 'content';
+  close $fh;
+
+  is( $app->run, 0, 'run should fail when basedir is a file' );
+
+  # Remove basedir file so that we can continue as normal
+  unlink $app->basedir;
+
+  # Test return value of main, in forground mode we should return not exit
+  is( $app->main, '0 but true', 'ForegroundApp returns zero but true' );
+
+  # Test run in foreground mode
+  is( $app->run,  '0 but true', 'Return zero but true from run as well' );
+
+  # Here we can also test stop for failure
+  # lock so that the app appears to be running
+  ok( $app->_lock, '_lock OK' );
+  
+  # Call stop without having written a pidfile
+  ok( !$app->stop,    'stop return false' );
+  ok( !$app->restart, 'restart return false' );
+  ok( $app->_unlock,  '_unlock OK' );
+}
+
 
 done_testing;
 

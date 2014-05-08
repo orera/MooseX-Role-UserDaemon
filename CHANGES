@@ -1,10 +1,35 @@
 ==================================================
-Changes from 2013-04-25 00:00:00 +0000 to present.
+Changes from 2013-05-08 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-04-25 19:44:30 +0000
+version 0.05 at 2014-05-08 22:42:39 +0000
 -----------------------------------------
+
+  Change: 2f441ff66b4edecf2febe3604925cee1d7266deb
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-05-09 00:28:13 +0000
+
+    updated README.pod 
+
+  Change: 2697b3934ff2e82ce55c331afae63074bb0e2ef4
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-05-09 00:26:00 +0000
+
+    Reworked unit tests, improved coverage 
+
+  Change: 1db5f0ae784d4430e64895bb7879a8210ec6adc6
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-04-27 01:59:22 +0000
+
+    Added more unit tests, also changed code to make testing easier and
+    fixing bugs 
+
+  Change: 2e5398c96a09c0b085a0a262b8e62c8d52288953
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-04-25 23:59:30 +0000
+
+    fixed unit tests after making lockfile and pidfile read-only 
 
   Change: a9a40db3edc49f431651df967cf312abf05da4f1
   Author: Tore Andersson <tore.andersson@gmail.com>

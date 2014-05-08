@@ -22,7 +22,7 @@ SYNOPSIS
         # to allow for graceful shutdown of the app.
         # In addition the HUP signal should be caught and used for config reload.
         my $run = 1;
-        local $SIG{'INT'} = sub { $run = 0; };
+        local $SIG{'TERM'} = local $SIG{'INT'} = sub { $run = 0; };
     
         FOREVER_LOOP:
         while ($run) {
@@ -81,7 +81,7 @@ SYNOPSIS
     
         # the user have to implement capturing signals and exiting.
         my $run = 1;
-        local $SIG{'INT'} = sub { $run = 0; };
+        local $SIG{'TERM'} = local $SIG{'INT'} = sub { $run = 0; };
     
         FOREVER_LOOP:
         while ($run) {
@@ -150,7 +150,7 @@ DESCRIPTION
 
  stop
 
-    Will read the pid from the pidfile and issue a INT signal.
+    Will read the pid from the pidfile and issue a TERM signal.
 
  restart
 
@@ -164,6 +164,14 @@ DESCRIPTION
 
     Will read the pid from the pidfile and print to STDOUT.
 
+NAME
+
+    MooseX::Role::UserDaemon - Simplify writing of user space daemons
+
+VERSION
+
+    version 0.05
+
 ATTRIBUTES
 
  _name
@@ -173,13 +181,13 @@ ATTRIBUTES
 
  _valid_commands
 
-    Regexp. Default is qr/status|start|stop|reload|restart/xms. Whitelist
-    methods which can be called from the command line.
+    Regexp. Default is qr/\A(status|start|stop|reload|restart)\z/xms.
+    Whitelist methods which can be called from the command line.
 
  timeout
 
     Integer. Default is 5. How much time in seconds it's expected to take
-    after shutting down the app by sending a INT singal. This is used by
+    after shutting down the app by sending a TERM singal. This is used by
     stop to avoid waiting forever for the app to shut down.
 
  foreground
@@ -217,14 +225,14 @@ METHODS
     New commands can be added by the consuming class, it which case the
     attribute _valid_commands needs to be updated for run() to allow the
     command to be executed. _valid_commands is a RegexpRef and the default
-    value is: qr/status|start|stop|reload|restart/
+    value is: qr/\A(status|start|stop|reload|restart)\z/
 
     You can set your own _valid_commands in the consuming class, to allow
     for custom commands like this:
 
       has '+_valid_commands' => (
         default => sub {
-          return qr/status|start|stop|restart|custom_command/xms
+          return qr/\A(status|start|stop|restart|custom_command)\z/xms
         },
       );
 
@@ -239,7 +247,7 @@ METHODS
 
  stop
 
-    stop() issues a INT signal to the PID listed in the pidfile. It is up
+    stop() issues a TERM signal to the PID listed in the pidfile. It is up
     to the author to trap this signal and end the application in an orderly
     fashion.
 
@@ -253,6 +261,17 @@ METHODS
     reload() issues a HUP signal to the PID listed in the pidfile. It is up
     to the author to trap this signal and do the appropriate thing, usualy
     to reload configuration files.
+
+AUTHOR
+
+    Tore Andersson <tore.andersson@gmail.com>
+
+COPYRIGHT AND LICENSE
+
+    This software is copyright (c) 2014 by Tore Andersson.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 
 AUTHOR
 
