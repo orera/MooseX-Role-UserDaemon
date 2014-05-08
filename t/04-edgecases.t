@@ -128,9 +128,21 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
 
   my $app = ForegroundApp->new({ foreground => 1, });
 
+  # basedir is a file
+  open my $fh, '>', $app->basedir;
+  print {$fh} 'content';
+  close $fh;
+
+  is( $app->run, 0, 'run should fail when basedir is a file' );
+
+  # Remove basedir file so that we can continue as normal
+  unlink $app->basedir;
+
   # Test return value of main, in forground mode we should return not exit
   is( $app->main, '0 but true', 'ForegroundApp returns zero but true' );
-#  is( $app->run,  '0 but true', 'Return zero but true from run as well' );
+
+  # Test run in foreground mode
+  is( $app->run,  '0 but true', 'Return zero but true from run as well' );
 
   # Here we can also test stop for failure
   # lock so that the app appears to be running
