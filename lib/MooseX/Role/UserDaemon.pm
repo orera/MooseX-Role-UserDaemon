@@ -436,8 +436,8 @@ BEGIN {
     my $pid = $self->_read_pid;
 
     # Signal the process
-    eval { kill 'HUP', $pid };
-    if ($EVAL_ERROR) {
+    my $kill_rc = eval { kill 'HUP', $pid };
+    if ($EVAL_ERROR || !$kill_rc) {
       say "Failed to signal PID: $pid.";
       return 0;    # Return 0 to please both unit tests and exit
     }
