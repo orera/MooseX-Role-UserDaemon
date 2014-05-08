@@ -131,6 +131,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   # Test return value of main, in forground mode we should return not exit
   is( $app->main, '0 but true', 'ForegroundApp returns zero but true' );
   is( $app->run,  '0 but true', 'Return zero but true from run as well' );
+  is( $app->run,  '0 but true', 'Return zero but true from run as well' );
 
   # Here we can also test stop for failure
   # lock so that the app appears to be running
