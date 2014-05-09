@@ -494,14 +494,6 @@ __END__
 
 =encoding UTF-8
 
-=head1 NAME
-
-MooseX::Role::UserDaemon - Simplify writing of user space daemons
-
-=head1 VERSION
-
-version 0.05
-
 =head1 SYNOPSIS
 
 In your module:
@@ -637,27 +629,7 @@ This lock  will be in place until the app shuts down.
 6. run the C<< main() >> subroutine.
 
 Five commands are implemented by default: status, start, stop, restart,
-reload.
-
-=head2 start (default)
-
-Will launch the application according to the description above.
-
-=head2 stop
-
-Will read the pid from the pidfile and issue a C<< TERM >> signal.
-
-=head2 restart
-
-Restart is the same as running stop then start again.
-
-=head2 reload
-
-Will read the pid from the pidfile and issue a C<< HUP >> signal.
-
-=head2 status
-
-Will read the pid from the pidfile and print to STDOUT.
+reload. More information on these can be found in the methods section.
 
 =head1 ATTRIBUTES
 
@@ -751,16 +723,5 @@ thing, usualy to reload configuration files.
 =for Pod::Coverage LOCK_EX
 
 =for Pod::Coverage LOCK_NB
-
-=head1 AUTHOR
-
-Tore Andersson <tore.andersson@gmail.com>
-
-=head1 COPYRIGHT AND LICENSE
-
-This software is copyright (c) 2014 by Tore Andersson.
-
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
 
 =cut
