@@ -1,10 +1,29 @@
 ==================================================
-Changes from 2013-05-08 00:00:00 +0000 to present.
+Changes from 2013-05-10 00:00:00 +0000 to present.
 ==================================================
 
 -----------------------------------------
-version 0.05 at 2014-05-08 22:27:38 +0000
+version 0.05 at 2014-05-10 16:59:42 +0000
 -----------------------------------------
+
+  Change: 31c4b352a6a5f9e12651ebe7274a6fa6de511bd9
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-05-10 18:59:17 +0000
+
+    Extract basename first to have the name be consistent regardless of
+    how it was called. 
+
+  Change: a829b8482a3af30718f32e067443c14579ecd7e4
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-05-10 00:16:33 +0000
+
+    Removed redundant POD 
+
+  Change: 2f441ff66b4edecf2febe3604925cee1d7266deb
+  Author: Tore Andersson <tore.andersson@gmail.com>
+  Date : 2014-05-09 00:28:13 +0000
+
+    updated README.pod 
 
   Change: 2697b3934ff2e82ce55c331afae63074bb0e2ef4
   Author: Tore Andersson <tore.andersson@gmail.com>
