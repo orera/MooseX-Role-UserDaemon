@@ -27,17 +27,17 @@ BEGIN {
     lazy    => 1,
     default => sub {    # The program name should not be to exotic.
 
-      # Aviod modifying $PORGRAM_NAME directly
-      my $program_name = $PROGRAM_NAME;
+      # Aviod modifying $PROGRAM_NAME directly
+      my $program_name = File::Basename::fileparse $PROGRAM_NAME;
 
-      # First replace unexpected chars with _ to pass unit tests (t/..);
+      # First replace exotic chars with _;
       $program_name =~ s/[^\w.,_ -]+/_/g;
 
       # Then capture to pass taintmode.
       ($program_name) = $program_name =~ /\A([\w.,_ -]+)\z/
         or die 'program name contain invalid characters.';
 
-      return File::Basename::fileparse $program_name;
+      return $program_name;
     },
   );
 
