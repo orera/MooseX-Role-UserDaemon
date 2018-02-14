@@ -12,6 +12,7 @@ use File::HomeDir  ();
 use File::Spec     ();
 use File::Path     ();
 use POSIX          ();
+use Try::Tiny;
 use namespace::autoclean;
 
 BEGIN {
@@ -45,7 +46,7 @@ BEGIN {
     is       => 'ro',
     isa      => 'RegexpRef',
     lazy     => 1,
-    default  => sub {qr/\A(status|start|stop|reload|restart)\z/},
+    default  => sub {qr/\A(status|start|stop|reload|restart|KILL)\z/},
     init_arg => undef,
   );
 
@@ -97,8 +98,8 @@ BEGIN {
 
   sub _build_basedir {
     my ($self) = @_;
-    return File::Spec->catdir( File::HomeDir->my_home,
-      lc( q{.} . $self->_name ) );
+    return File::Spec->catdir( sprintf '%s.%s',
+      File::HomeDir->my_home, lc $self->_name );
   }
 
   sub _build_lockfile {
@@ -352,7 +353,8 @@ BEGIN {
   sub start {
     my ($self) = @_;
 
-    return $self->status if $self->_is_running;
+    return $self->status
+      if $self->_is_running;
 
     say 'Starting...';
 
@@ -372,6 +374,16 @@ BEGIN {
 
   sub stop {
     my ($self) = @_;
+    return $self->_stop('TERM');
+  }
+
+  sub KILL {
+    my ($self) = @_;
+    return $self->_stop('KILL');
+  }
+
+  sub _stop {
+    my ( $self, $signal ) = @_;
 
     if ( !$self->_is_running ) {
       say 'Process not running, nothing to stop.';
@@ -386,31 +398,40 @@ BEGIN {
     # Get process id
     my $pid = $self->_read_pid;
 
-    eval { kill 'TERM', $pid };
-    if ($EVAL_ERROR) {
-      warn 'Not able to issue kill signal.';
+    #die "x $signal x";
+    my $error;
+    try {
+      kill $signal, $pid;
+    }
+    catch {
+      $error = 'Not able to issue kill signal.';
+    };
+
+    if ( defined $error ) {
+      warn $error;
       return 0;
     }
-    else {
-      say "Stopping PID: $pid...";
-    }
 
-    eval {
+    say "Stopping PID: $pid...";
+
+    my $rc = 0;
+    try {
       local $SIG{'ALRM'} = sub { die "Timed out waiting for exit\n"; };
 
       my $lockfile_fh = $self->_init_fh( '+<', $self->lockfile );
-      if ( !flock( $lockfile_fh, LOCK_EX | LOCK_NB ) ) {
-
-        #say "Lockfile still blocked, waiting\n";
+      if ( !flock $lockfile_fh, LOCK_EX | LOCK_NB ) {
         alarm $self->timeout;
-        flock( $lockfile_fh, LOCK_EX );
+        flock $lockfile_fh, LOCK_EX;
         alarm 0;
       }
       close $lockfile_fh;
+      $rc = '0 but true';
+    }
+    catch {
+      warn $_;
     };
-    return $EVAL_ERROR
-      ? 0
-      : '0 but true';
+
+    return $rc;
   }
 
   sub restart {
@@ -436,10 +457,17 @@ BEGIN {
     my $pid = $self->_read_pid;
 
     # Signal the process
-    my $kill_rc = eval { kill 'HUP', $pid };
-    if ($EVAL_ERROR || !$kill_rc) {
-      say "Failed to signal PID: $pid.";
-      return 0;    # Return 0 to please both unit tests and exit
+    my $rc;
+    try {
+      $rc = kill 'HUP', $pid;
+    }
+    catch {
+      $rc = undef;
+    };
+
+    if ( !defined $rc ) {
+      say "Failed to signal PID: $pid";
+      return 0;
     }
 
     say "PID: $pid, was signaled to reload.";
@@ -451,9 +479,9 @@ BEGIN {
 
     # Get the command to run.
     my $command
-      = $self->can('extra_argv') && ref( $self->extra_argv ) eq 'ARRAY'
-      ? shift $self->extra_argv    # If MooseX::Getopt is in use.
-      : shift @ARGV;               # Else get it from @ARGV
+      = ( $self->can('extra_argv') && ref $self->extra_argv eq 'ARRAY' )
+      ? shift @{ $self->extra_argv }    # If MooseX::Getopt is in use.
+      : shift @ARGV;                    # Else get it from @ARGV
 
     # Default to start.
     $command ||= 'start';
@@ -604,6 +632,10 @@ On the commanline:
   $ yourapp.pl stop
     Stopping PID: ...
 
+  Forecfully kill your app
+  $ yourapp.pl KILL
+    Stopping PID: ...
+
 =head1 DESCRIPTION
 
 This module aims to simplify implementation of daemons and apps ment to be run
@@ -708,6 +740,10 @@ and after forking (unless foreground mode is enabled).
 C<< stop() >> issues a C<< TERM >> signal to the PID listed in the pidfile. It
 is up to the author to trap this signal and end the application in an
 orderly fashion.
+
+=head2 KILL
+
+C<< stop() >> issues a C<< KILL >> signal to the PID listed in the pidfile.
 
 =head2 restart
 
