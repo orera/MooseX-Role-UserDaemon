@@ -23,7 +23,7 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
     my $run = 1;
     local $SIG{'INT'} = local $SIG{'TERM'} = sub { $run = 0; };
     local $SIG{'HUP'} = 'IGNORE';
-    
+
     while ($run) { sleep 1; }
     return '0 but true';
   }
@@ -48,33 +48,20 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
   isa_ok( $app, 'App' );
   can_ok( $app, @subs );
 
-  # # Lockfile test
-  # ok( !-e $app->lockfile, 'lockfile does not exists' );
-  # ok( !$app->_is_running, '_is_running() return false' );
-  # ok( $app->_lock,        '_lock() return success' );
-  # ok( -e $app->lockfile,  'lockfile exists' );
-  # ok( $app->_is_running,  '_is_running() return success' );
-  # ok( $app->_unlock,      '_unlock() return success' );
-
-  # # Pidfile test
-  # ok( !-e $app->pidfile, 'pidfile does not exists' );
-  # ok( $app->_write_pid,  '_write_pid() return success' );
-  # ok( -e $app->pidfile,  'pidfile exists' );
-  # cmp_ok( $app->_read_pid, '==', $PID, '_read_pid() match current PID' );
-  # ok( $app->_delete_pid, '_delete_pid() return success' );
-  # ok( !-e $app->pidfile, 'pidfile does not exist' );
-
   # Test public methods
   my @modes = qw(
     status  start   start  status restart stop
     status  restart stop   stop   run     status
-    reload  stop
+    reload  stop start KILL status
   );
 
   my %mode_prints = (
     run   => [ qr{^Starting\.\.\.}, ],
-    start => [ qr{^Starting\.\.\.}, qr{^Running with PID:\s\d+}, ],
-    stop  => [
+    start => [
+      qr{^Starting\.\.\.}, qr{^Running with PID:\s\d+},
+      qr{^Starting\.\.\.}
+    ],
+    stop => [
       qr{^Stopping PID:\s\d+},
       qr{^Stopping PID:\s\d+},
       qr{Process not running, nothing to stop\.},
@@ -85,14 +72,14 @@ BEGIN { use_ok('MooseX::Role::UserDaemon'); }
       qr{^Running with PID:\s\d+},
       qr{^Not running.},
       qr{^Running with PID:\s\d+},
+      qr{^Not running.},
     ],
-    reload => [
-      qr{^PID: \d+, was signaled to reload\.},
-    ],
+    reload  => [ qr{^PID: \d+, was signaled to reload\.}, ],
     restart => [
       qr{^Stopping\sPID:\s\d+\.\.\.\nStarting\.\.\.},
       qr{Process not running, nothing to stop.\nStarting\.\.\.},
     ],
+    KILL => [ qr{^Stopping PID:\s\d+}, ],
   );
 
   foreach my $mode (@modes) {
